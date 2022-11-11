@@ -2,19 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
     <title>Maps</title>
+
+    <style>
+        html,
+        body,
+        #viewDiv {
+          padding: 0;
+          margin: 0;
+          height: 90%;
+          width: 80%;
+        }
+    
+        #layerToggle {
+            top: 20px;
+            right: 20px;
+            position: absolute;
+            z-index: 99;
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px;
+            opacity: 0.75;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.24/"></script>
 </head>
-<script src="maps.js"></script>
+
+
 <body>
 
 <span style="font-weight: bold; font-size: larger"> Welcome to the Maps page</span><br>
+<a href="home.html"><button class="btn btn-primary btn-lg">Go to home</button></a>
 
+<br><br>
+
+<label for="browseID">Choose CSV file </label>
+<input id="browseID" type='file' class="browse">
 <section id ="display"></section>
-<button onclick="append_rect()"> TEST </button>
+
+<div id="viewDiv"></div>
+<span id="layerToggle" class="esri-widget">
+    <input type="checkbox" id="countriesLayer" checked /> Countries
+</span>
+
+<script src="maps.js"></script>
 
 
-<a href="home.html">
-    <button class="btn btn-primary btn-lg">Go to home</button>
-</a>
 </body>
 </html>
