@@ -1,20 +1,17 @@
 library(shiny)
 
 ui <- fluidPage(
-  titlePanel("censusVis"),
+  titlePanel("Premiers pas SHINY"),
   
   sidebarLayout(
     sidebarPanel(
-      helpText("Create demographic maps with 
-               information from the 2010 US Census."),
+      helpText("Ceci est un help test"),
       
       selectInput("var", 
                   label = "Choose a variable to display",
-                  choices = c("Choice 1", 
-                              "Choice 2",
-                              "Choice 3", 
-                              "Choice 4"),
-                  selected = "Percent White"),
+                  choices = c("2", 
+                              "3"),
+                  selected = "2"),
       
       sliderInput("range", 
                   label = "Range of interest:",
@@ -28,18 +25,26 @@ ui <- fluidPage(
     mainPanel(
       textOutput("selected_var"),
       textOutput("min_and_max"),
-      tableOutput("contents")
+      tableOutput("contents"),
+      textOutput("mean")
     )
   )
 )
 
-# Define server logic required to draw a histogram ----
+
 server <- function(input, output) {
   
+  read_file <- reactive({
+    inFile <- input$filechoser
+    if (is.null(inFile))
+      return(NULL)
+    df <- read.csv(inFile$datapath, header = TRUE, sep = ";") 
+    return(df)
+  })
+  
   output$contents <- renderTable({
-   file <- input$filechoser
-    
-    read.csv(file$datapath, header = input$header, sep = ";")
+    df <- read_file()
+    df
   })
   
   output$selected_var <- renderText({ 
@@ -47,6 +52,18 @@ server <- function(input, output) {
   })
   output$min_and_max <- renderText({
     paste("The min and max are : ", input$range[1], " ", input$range[2])
+  })
+  
+  output$mean <- renderText ({
+    data = read_file()
+    choice = input$var
+    print(choice)
+    if (is.null(data)){
+      print("You still have not imported files")
+      return (NULL)
+    }
+    moy = mean(data[,as.integer(choice)])
+    paste("The mean is : ", moy)
   })
   
 }
