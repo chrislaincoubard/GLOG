@@ -1,0 +1,46 @@
+h1{
+    font-weight: 700;
+    color: forestgreen;
+    text-align: center;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+header {
+    background-color: #f1f1f1;
+    padding: 30px;
+    text-align: center;
+    font-size: 35px;
+}
+
+
+footer {
+    font-style:italic;
+    background-color: #f1f1f1;
+    padding: 10px;
+    text-align: center;
+}
+
+p{
+    text-align: justify;
+}
+
+button {
+    display: grid;
+    background-color: forestgreen;
+    border-radius: 20px;
+    border: 4px double #cccccc;
+    color: #eeeeee;
+    text-align: center;
+    font-size: 20px;
+    padding: 20px;
+    width: 200px;
+    -webkit-transition: all 0.5s;
+    -moz-transition: all 0.5s;
+    -o-transition: all 0.5s;
+    transition: all 0.5s;
+    cursor: pointer;
+    margin: auto;
+  }

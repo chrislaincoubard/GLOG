@@ -129,7 +129,7 @@ async function uploadAndMap(ev) {
         let map = newMap(Map, "gray-vector",[worldImagery]);
         let view = newView(MapView, map, 3.5, [2.34, 48.86]);
         
-        worldImagery.renderer = renderer;
+        //worldImagery.renderer = renderer;
         
         // Create a variable referencing the checkbox node
         const countriesLayerToggle = document.getElementById("countriesLayer");
