@@ -54,7 +54,7 @@ server <- function(input, output,session) {
     inFile <- input$filechoser
     if (is.null(inFile))
       return(NULL)
-    df <- read.csv(inFile$datapath, header = TRUE, sep = ";")  
+    df <- read.csv(inFile$datapath, header = TRUE)  
     return(df)
   })
   
