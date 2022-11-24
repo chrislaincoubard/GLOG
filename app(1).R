@@ -1,6 +1,8 @@
 library(shiny)
+library(shinyjs)
 
 ui <- fluidPage(
+  useShinyjs(),
   titlePanel("GLOG -- STATS"),
   
   sidebarLayout(
@@ -10,7 +12,7 @@ ui <- fluidPage(
                    choices = c(Comma = ",", Semicolon = ";", Tab = "\t"),
                    selected = ","),
       
-      fileInput("filechoser", label = "filechoser", accept = ".csv"),
+      fileInput("filechoser", label = "Chose a file", accept = ".csv"),
       
       #pour afficher l'UI de façon conditionnelle
       conditionalPanel(
@@ -24,22 +26,21 @@ ui <- fluidPage(
         )),
         conditionalPanel(
           condition = 'input.master === "Stats"',
-          actionButton("mean_btn", "Mean_btn", color = "warning"),
-          actionButton("plot", "Plot", color ="warning"),
-          
+          actionButton("mean_btn", "Calculate mean"),
+          actionButton("reset", "Reset")),
+        conditionalPanel(
+          condition = 'input.master === "Plots"',
+          actionButton("plot", "Plot"),
+          actionButton('reset', "Reset")
         )
       
     )),
-    
-    #Pour faire les onglets, un onglet ne peut contenir qu'un output d'après ce que
-    #j'ai vu sur la doc donc pour l'instant y'a des onglets imbriqués, a voir si on garde
+
     mainPanel(
       tabsetPanel(id = "master",
                   tabPanel("Display", dataTableOutput("contents")),
-                  tabPanel("Stats",
-                           tabsetPanel(id = "stats",
-                                       tabPanel("Mean", verbatimTextOutput("Moy")),
-                                       tabPanel("Plot", plotOutput("plot")))))
+                  tabPanel("Stats", verbatimTextOutput("text_stats")),
+                  tabPanel("Plots", plotOutput("plot_stats")))
     )
 )
 )
@@ -49,12 +50,18 @@ server <- function(input, output,session) {
   
   #Pour stocker les résultats des popups
   RV <- reactiveValues()
+  RV$X <- NULL
+  RV$Y <- NULL
   
   observe({
     updateCheckboxGroupInput(session, "column_choice", 
                              label = "choose the column(s)",
                              choices = colnames(read_file()),
                              selected = colnames(read_file()))
+  })
+  
+  observeEvent(input$reset, {
+    RV$mean = c()
   })
   
   observeEvent(input$mean_btn, {
@@ -73,13 +80,13 @@ server <- function(input, output,session) {
   observeEvent(input$plot, {
     showModal(modalDialog(
       tags$h2("Please choose your axis"),
-      selectInput(id = "X_axis", label = "X axis",
-                  choices = colnames(read_file())),
-      selectInput(id = "Y_axis", label = "Y axis",
-                  choices = colnames(read_file())),
+       selectInput(inputId = "X_axis",label = "X axis",
+                   choices = colnames(read_file())),
+       selectInput(inputId = "Y_axis", label = "Y axis",
+                   choices = colnames(read_file())),
       footer = tagList(
         actionButton('submit_plot', "Submit"),
-        actionButton('cancel')
+        modalButton('cancel')
       )
       
       
@@ -88,8 +95,10 @@ server <- function(input, output,session) {
   
   observeEvent(input$submit_plot, {
     removeModal()
+    print(input$X_axis)
+    print(input$Y_axis)
     RV$X <- input$X_axis
-    RV$Y <- inpput$Y_axis
+    RV$Y <- input$Y_axis
   })
   
   observeEvent(input$submit, {
@@ -122,23 +131,28 @@ server <- function(input, output,session) {
     NULL
   })
 
+  output$plot_stats <- renderPlot(
+    if ((!(is.null(RV$X))) & (!(is.null(RV$Y)))) {
+      df <- read_file()
+      
+      plot(x = unlist(df[RV$X]), y = unlist(df[RV$Y]), xlab = RV$X, ylab = RV$Y)
+    }
+    
+  )
   
-  
-  output$Mean <- renderText ({
+  output$text_stats <- renderText ({
     final_msg = ""
-    if (length(input$mean_choice) | input$mean_choice == "None"){
         df = read_file()
-        if (length(RV$mean)){
+        if (length(RV$mean >1)){
           for (value in unlist(RV$mean)){
             moy = mean(as.numeric(unlist(na.omit(df[value]))))
             final_msg = paste(final_msg, "La moyenne est de", moy, "\n")
           }
         }
-    }
     paste(final_msg, sep = "\n")
-    
   })
   
 }
 
 shinyApp(ui = ui, server = server)
+
