@@ -1,5 +1,5 @@
 library(shiny)
-library(shinyjs)
+library(dplyr)
 
 ui <- fluidPage(
   titlePanel("GLOG -- STATS"),
@@ -12,6 +12,8 @@ ui <- fluidPage(
                    selected = ","),
       
       fileInput("filechoser", label = "Chose a file", accept = ".csv"),
+      
+      varSelectizeInput("test", "TEST", data = ""),
       
       #pour afficher l'UI de façon conditionnelle
       conditionalPanel(
@@ -47,16 +49,32 @@ ui <- fluidPage(
 
 server <- function(input, output,session) {
   
+  read_file <- reactive({
+    inFile <- input$filechoser
+    if (is.null(inFile))
+      return(NULL)
+    df <- read.csv(inFile$datapath, header = TRUE, sep = input$sep)  
+    return(df)
+  })
   #Pour stocker les résultats des popups
-  RV <- reactiveValues()
-  RV$X <- NULL
-  RV$Y <- NULL
+  RV <- reactiveValues(X = NULL, Y = NULL)
+  
+  observe({
+    updateVarSelectizeInput(session, "test", 
+                            data = read_file())
+  })
   
   observe({
     updateCheckboxGroupInput(session, "column_choice", 
                              label = "choose the column(s)",
                              choices = colnames(read_file()),
                              selected = colnames(read_file()))
+  })
+  
+  observeEvent(input$filter, {
+    df = read_file()
+    updateSelectizeInput(session, "row_choice",
+                         choices = df[input$filter])
   })
   
   observeEvent(input$reset, {
@@ -77,27 +95,35 @@ server <- function(input, output,session) {
   })
   
   observeEvent(input$plot, {
+    df <- read_file()
     showModal(modalDialog(
       tags$h2("Please choose your axis"),
        selectInput(inputId = "X_axis",label = "X axis",
-                   choices = colnames(read_file())),
+                   choices = colnames(df)),
        selectInput(inputId = "Y_axis", label = "Y axis",
-                   choices = colnames(read_file())),
+                   choices = colnames(df)),
+      selectInput("filter", "Filter",
+                  choices = colnames(df)),
+      selectizeInput("row_choice","Choose individuals to keep",
+                       choices = unlist(df[input$filter]),
+                       selected = " ",
+                     multiple = TRUE),
+      
       footer = tagList(
         actionButton('submit_plot', "Submit"),
         modalButton('cancel')
-      )
+      ))
       
       
-    ))
+    )
+    
   })
   
   observeEvent(input$submit_plot, {
     removeModal()
-    print(input$X_axis)
-    print(input$Y_axis)
     RV$X <- input$X_axis
     RV$Y <- input$Y_axis
+    RV$row_choice <- input$row_choice
   })
   
   observeEvent(input$submit, {
@@ -105,13 +131,7 @@ server <- function(input, output,session) {
       RV$mean <- input$mean_choice
   })
   
-  read_file <- reactive({
-    inFile <- input$filechoser
-    if (is.null(inFile))
-      return(NULL)
-    df <- read.csv(inFile$datapath, header = TRUE, sep = input$sep)  
-    return(df)
-  })
+
   
   output$fileUploaded <- reactive({
     return(!is.null(read_file()))
@@ -127,13 +147,19 @@ server <- function(input, output,session) {
     else {
       NULL
     }
+    
   })
 
   output$plot_stats <- renderPlot(
     if ((!(is.null(RV$X))) & (!(is.null(RV$Y)))) {
       df <- read_file()
-      
-      plot(x = unlist(df[RV$X]), y = unlist(df[RV$Y]), xlab = RV$X, ylab = RV$Y)
+      if (is.null(input$row_choice)){
+        plot(x = unlist(df[RV$X]), y = unlist(df[RV$Y]), xlab = RV$X, ylab = RV$Y)
+      }
+      else {
+        df2 <- df[df[,input$filter] %in% c(input$row_choice),]
+        plot(unlist(df2[RV$X]), unlist(df2[RV$Y]), xlab = RV$X, ylab = RV$Y)
+      }
     }
     
   )
@@ -153,4 +179,3 @@ server <- function(input, output,session) {
 }
 
 shinyApp(ui = ui, server = server)
-
