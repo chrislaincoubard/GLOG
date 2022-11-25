@@ -119,15 +119,14 @@ server <- function(input, output,session) {
   
   outputOptions(output, "fileUploaded", suspendWhenHidden = FALSE)
   
-  output$contents <- DT::renderDataTable({
+  output$contents <- renderDataTable({
     if (input$show_df == 1){
       df <- read_file()
-      print(unlist(input$column_choice))
-      
-      return(DT::datatable(df[, input$column_choice, drop = FALSE]))
+      df[, input$column_choice, drop = FALSE]
       }
-    
-    NULL
+    else {
+      NULL
+    }
   })
 
   output$plot_stats <- renderPlot(
