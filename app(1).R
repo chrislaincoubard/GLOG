@@ -2,7 +2,6 @@ library(shiny)
 library(shinyjs)
 
 ui <- fluidPage(
-  useShinyjs(),
   titlePanel("GLOG -- STATS"),
   
   sidebarLayout(
