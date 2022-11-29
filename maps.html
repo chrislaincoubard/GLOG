@@ -4,54 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
     <title>Maps</title>
-
-    <style>
-        html,
-        body,
-        #viewDiv {
-          padding: 0;
-          margin: 0;
-          height: 90%;
-          width: 80%;
-        }
-    
-        #layerToggle {
-            top: 20px;
-            right: 20px;
-            position: absolute;
-            z-index: 99;
-            background-color: white;
-            border-radius: 8px;
-            padding: 10px;
-            opacity: 0.75;
-        }
-    </style>
-
-    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
-    <link href="home.css" rel="stylesheet">
-    <script src="https://js.arcgis.com/4.24/"></script>
+    <link href="test.css" rel="stylesheet">
 </head>
 
 
 <body>
 
+    <div class="topnav">
+        <a href="test.html"><button class="button page">Return Home menu</button></a>
+        <a href="#" style="float:right">Link</a>
+      </div>
 
-<h1>Welcome to the Maps page</h1>
-<a href="home.html"><button class="btn btn-primary btn-lg">Go to home</button></a>
+<div class="header">
+    <h1>Welcome to the Maps page</h1>
+    <p>Here the details of the epidemy, on maps</p>
+</div>
 
-<br><br>
 
-<label for="browseID">Choose CSV file </label>
-<input id="browseID" type='file' class="browse">
-<section id ="display"></section>
+  
 
-<div id="viewDiv"></div>
-<span id="layerToggle" class="esri-widget">
-    <input type="checkbox" id="countriesLayer" checked /> Countries
-</span>
+<div class="content">
+    <iframe height="100%" width="100%" frameborder="no" src="http://127.0.0.1:4708"> </iframe>
+    <a href="test.html" target="_blank" rel="noreferrer noopener"><button class="button page">Go to home</button></a>
+</div>
 
-<script src="maps.js"></script>
-
+<div class="footer">
+    <h2><em>
+      <p>Master Bioinformatique Bordeaux - 2022</p>
+      <p>BRINDEL Léonard - COUBARD Chrislain - GERBER Zoé - MANGANE Fatoumata - NICOLLIN Elena </p>
+      </em></h2>
+  </div>
 
 </body>
 </html>
