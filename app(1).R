@@ -1,5 +1,6 @@
 library(shiny)
 library(dplyr)
+library(ggplot2)
 
 ui <- fluidPage(
   titlePanel("GLOG -- STATS"),
@@ -8,7 +9,7 @@ ui <- fluidPage(
     sidebarPanel(
       
       radioButtons("sep", "Separator", 
-                   choices = c(Comma = ",", Semicolon = ";", Tab = "\t"),
+                   choices = c(Comma=',',Semicolon=';',Tab='\t', Space=''),
                    selected = ","),
       
       fileInput("filechoser", label = "Chose a file", accept = ".csv"),
@@ -28,6 +29,8 @@ ui <- fluidPage(
         conditionalPanel(
           condition = 'input.master === "Stats"',
           actionButton("mean_btn", "Calculate mean"),
+          actionButton("stdev_btn", "Calculate standard deviation"),
+          actionButton("sum_btn", "Calculate sum"),
           actionButton("reset", "Reset")),
         conditionalPanel(
           condition = 'input.master === "Plots"',
@@ -81,6 +84,14 @@ server <- function(input, output,session) {
     RV$mean = c()
   })
   
+  observeEvent(input$reset, {
+    RV$stdev = c()
+  })
+  
+  observeEvent(input$reset, {
+    RV$sum = c()
+  })
+  
   observeEvent(input$mean_btn, {
     # display a modal dialog (popup)
     showModal(modalDialog(
@@ -93,7 +104,32 @@ server <- function(input, output,session) {
       )
     ))
   })
+    observeEvent(input$stdev_btn, {
+      # display a modal dialog (popup)
+      showModal(modalDialog(
+        tags$h2('Please Choose the columns you want to compute their standard deviation'),
+        checkboxGroupInput("stdev_choice", "Stdev_choice", 
+                           choices = colnames(read_file())),
+        footer=tagList(
+          actionButton('submit', 'Submit'),
+          modalButton('cancel')
+        )
+      ))
+  })
   
+    observeEvent(input$sum_btn, {
+      # display a modal dialog (popup)
+      showModal(modalDialog(
+        tags$h2('Please Choose the columns you want to compute their sum'),
+        checkboxGroupInput("sum_choice", "Sum_choice", 
+                           choices = colnames(read_file())),
+        footer=tagList(
+          actionButton('submit', 'Submit'),
+          modalButton('cancel')
+        )
+      ))
+    })
+    
   observeEvent(input$plot, {
     df <- read_file()
     showModal(modalDialog(
@@ -131,6 +167,16 @@ server <- function(input, output,session) {
       RV$mean <- input$mean_choice
   })
   
+  observeEvent(input$submit, {
+    removeModal()
+    RV$stdev <- input$stdev_choice
+  })
+  
+  observeEvent(input$submit, {
+    removeModal()
+    RV$sum <- input$sum_choice
+  })
+  
 
   
   output$fileUploaded <- reactive({
@@ -154,11 +200,19 @@ server <- function(input, output,session) {
     if ((!(is.null(RV$X))) & (!(is.null(RV$Y)))) {
       df <- read_file()
       if (is.null(input$row_choice)){
-        plot(x = unlist(df[RV$X]), y = unlist(df[RV$Y]), xlab = RV$X, ylab = RV$Y)
+        ggplot(data   =df,              
+               mapping = aes(x = unlist(df[RV$X]),   
+                             y = unlist(df[RV$Y]))) + geom_point(col="#058E40") + ggtitle("Plot of x by Y") +
+          xlab(RV$X) + ylab(RV$Y)
+
       }
       else {
         df2 <- df[df[,input$filter] %in% c(input$row_choice),]
-        plot(unlist(df2[RV$X]), unlist(df2[RV$Y]), xlab = RV$X, ylab = RV$Y)
+        
+        ggplot(data   =df2,              
+               mapping = aes(x = unlist(df2[RV$X]),   
+                             y = unlist(df2[RV$Y]))) + geom_point(col="#058E40")  +
+          xlab(RV$X) + ylab(RV$Y)
       }
     }
     
@@ -173,9 +227,26 @@ server <- function(input, output,session) {
             final_msg = paste(final_msg, "La moyenne est de", moy, "\n")
           }
         }
+    
+    if (length(RV$stdev >1)){
+      for (value in unlist(RV$stdev)){
+        var = var(as.numeric(unlist(na.omit(df[value]))))
+        final_msg = paste(final_msg, "La variance est de", var, "\n")
+      }
+    }
+        
+        if (length(RV$sum >1)){
+          for (value in unlist(RV$sum)){
+            sum = sum(as.numeric(unlist(na.omit(df[value]))))
+            final_msg = paste(final_msg, "La somme est de", sum, "\n")
+          }
+        }
+        
     paste(final_msg, sep = "\n")
+          
   })
   
 }
 
 shinyApp(ui = ui, server = server)
+
