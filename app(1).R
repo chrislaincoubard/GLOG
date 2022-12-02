@@ -4,7 +4,6 @@ library(ggplot2)
 
 ui <- fluidPage(
   titlePanel("GLOG -- STATS"),
-  
   sidebarLayout(
     sidebarPanel(
       
@@ -35,7 +34,9 @@ ui <- fluidPage(
         conditionalPanel(
           condition = 'input.master === "Plots"',
           actionButton("plot", "Plot"),
-          actionButton('reset', "Reset")
+          actionButton('reset', "Reset"),
+          tableOutput("TBL"),
+          
         )
       
     )),
@@ -44,7 +45,8 @@ ui <- fluidPage(
       tabsetPanel(id = "master",
                   tabPanel("Display", dataTableOutput("contents")),
                   tabPanel("Stats", verbatimTextOutput("text_stats")),
-                  tabPanel("Plots", plotOutput("plot_stats")))
+                  tabPanel("Plots", plotOutput("plot_stats"))),
+                  plotOutput("plotTest")
     )
 )
 )
@@ -52,11 +54,42 @@ ui <- fluidPage(
 
 server <- function(input, output,session) {
   
+  output$plotTest <- renderPlot({
+    df = read_file()
+    df$date = as.Date(df$date,"%Y-%m-%d")
+    subCase = df[df$location=='Chile',c("total_cases")]
+    subTime = df[df$location=='Chile',c("date")]
+    plot(subCase ~ subTime, df, xaxt = "n", type = "l")
+    axis(1, df$date, format(df$date, "%b %d"), cex.axis = .7)
+    # subDeath = mainDf[mainDf$location=='Chile',c("total_cases")]
+    # print("subdeath ok")
+    # 
+    # subTime = mainDf[mainDf$location=='Chile',c("date")]
+    # print("TEST 4")
+    # subTime = as.array(subTime)
+    # print(subTime)
+    # for (i in 1:length(subTime)){
+    #   subTime[i] = gsub('-','',subTime[i])
+    #   subTime[i] = as.numeric(subTime[i])
+    # }
+    # 
+    # realTime = apply(subTime,1,as.numeric)
+    # print(subTime)
+    # print(class(subTime))
+    # print("TEST 5")
+    # for (i in 1:length(subTime)){
+    #   subTime[i] = subTime[i] - subTime[1] + 1
+    # }
+    # print(subTime)
+    # plot(x = subTime, y = subDeath)
+  })
+  
+  
   read_file <- reactive({
     inFile <- input$filechoser
     if (is.null(inFile))
       return(NULL)
-    df <- read.csv(inFile$datapath, header = TRUE, sep = input$sep)  
+    df <- read.csv(inFile$datapath, header = TRUE, sep = input$sep,stringsAsFactors=FALSE)  
     return(df)
   })
   #Pour stocker les résultats des popups
