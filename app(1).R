@@ -31,8 +31,6 @@ ui <- fluidPage(
           actionButton("mean_btn", "Calculate mean"),
           actionButton("stdev_btn", "Calculate standard deviation"),
           actionButton("sum_btn", "Calculate sum"),
-          actionButton("ratio_btn", "Calculate ratio"),
-          actionButton("prop_btn", "Calculate proportion"),
           actionButton("reset", "Reset")),
         conditionalPanel(
           condition = 'input.master === "Plots"',
@@ -94,13 +92,6 @@ server <- function(input, output,session) {
     RV$sum = c()
   })
   
-  observeEvent(input$reset, {
-    RV$ratio = c()
-  })
-  observeEvent(input$reset, {
-    RV$prop = c()
-  })
-  
   observeEvent(input$mean_btn, {
     # display a modal dialog (popup)
     showModal(modalDialog(
@@ -131,36 +122,6 @@ server <- function(input, output,session) {
       showModal(modalDialog(
         tags$h2('Please Choose the columns you want to compute their sum'),
         checkboxGroupInput("sum_choice", "Sum_choice", 
-                           choices = colnames(read_file())),
-        footer=tagList(
-          actionButton('submit', 'Submit'),
-          modalButton('cancel')
-        )
-      ))
-    })
-    
-    observeEvent(input$ratio_btn, {
-      # display a modal dialog (popup)
-      showModal(modalDialog(
-        tags$h2('Please Choose the columns you want to compute their ratio'),
-        checkboxGroupInput("ratio_num", "Numerator", 
-                           choices = colnames(read_file())),
-        checkboxGroupInput("ratio_den", "Denominator", 
-                           choices = colnames(read_file())),
-        footer=tagList(
-          actionButton('submit', 'Submit'),
-          modalButton('cancel')
-        )
-      ))
-    })
-    
-    observeEvent(input$prop_btn, {
-      # display a modal dialog (popup)
-      showModal(modalDialog(
-        tags$h2('Please Choose the columns you want to use compute the proportion'),
-        checkboxGroupInput("prop_num", "Numerator", 
-                           choices = colnames(read_file())),
-        checkboxGroupInput("prop_den", "Denominator", 
                            choices = colnames(read_file())),
         footer=tagList(
           actionButton('submit', 'Submit'),
@@ -214,20 +175,6 @@ server <- function(input, output,session) {
   observeEvent(input$submit, {
     removeModal()
     RV$sum <- input$sum_choice
-  })
-  
-  observeEvent(input$submit, {
-    removeModal()
-    RV$num <- input$ratio_num
-    RV$den <- input$ratio_den
-    
-  })
-  
-  observeEvent(input$submit, {
-    removeModal()
-    RV$nump <- input$prop_num
-    RV$denp <- input$prop_den
-    
   })
   
 
@@ -288,25 +235,12 @@ server <- function(input, output,session) {
       }
     }
         
-      if (length(RV$sum >1)){
-        for (value in unlist(RV$sum)){
-          sum = sum(as.numeric(unlist(na.omit(df[value]))))
-          final_msg = paste(final_msg, "La somme est de", sum, "\n")
+        if (length(RV$sum >1)){
+          for (value in unlist(RV$sum)){
+            sum = sum(as.numeric(unlist(na.omit(df[value]))))
+            final_msg = paste(final_msg, "La somme est de", sum, "\n")
+          }
         }
-      }
-        
-        if (length(RV$num >1 & RV$den >1)){
-
-            ratio = sum(as.numeric(unlist(na.omit(df[RV$num]))))/sum(as.numeric(unlist(na.omit(df[RV$den]))))
-            final_msg = paste(final_msg, "Le ratio est de", ratio, "\n")
-        }
-        
-        if (length(RV$nump >1 & RV$denp >1)){
-          
-          prop = sum(as.numeric(unlist(na.omit(df[RV$nump]))))/(sum(as.numeric(unlist(na.omit(df[RV$denp])))) + sum(as.numeric(unlist(na.omit(df[RV$nump])))))
-          final_msg = paste(final_msg, "La proportion est de", prop, "\n")
-        }
-        
         
     paste(final_msg, sep = "\n")
           
