@@ -23,14 +23,24 @@ ui <- fluidPage(
         sidebarPanel(
           fileInput("filebrowse", "Select file..."),
           
-          selectInput("country_col", "Indicate the column containing the country names:",
+          radioButtons("sep", "Separator", 
+                       choices = c(Comma = ",", Semicolon = ";", Tab = "\t"),
+                       selected = ","),
+          
+          selectInput("country_col", "Column containing the country names",
                       choices = c("Select file first")),
           
-          selectInput("col_choice", "Choose the type of data to visualise:",
+          radioButtons("type", "Country data is",
+                       choices = c("Full name (English)"="names", "Alpha-2 code" = "a2", "Alpha-3 code" = "a3"),
+                       selected = "Full name (English)"),
+          
+          selectInput("col_choice", "Data to visualise",
                       choices = c("Select file first")),
           
-          colourInput("color1", "Select first color for gradient", value = "#DEF4FF"),
-          colourInput("color2", "Select last color for gradient", value = "#0C4999")
+          colourInput("color1", "First color for gradient", value = "#6A994E"),
+          colourInput("color2", "Last color for gradient", value = "#CB4749"),
+          checkboxInput("third_color", "Include a middle color value", value=TRUE),
+          colourInput("color3", "Middle color for gradient", value = "#FFFFFF")
         ),
 
         # Show a plot of the generated distribution
@@ -49,29 +59,30 @@ server <- function(input, output, session) {
   
   observe({
     updateSelectInput(session, "country_col", 
-                      label = "Indicate the column containing the country names:",
+                      label = "Column containing the country names:",
                       choices = colnames(read_file()))
   })
   
   observe({
     updateSelectInput(session, "col_choice", 
-                             label = "Choose the type of data to visualise:",
+                             label = "Data to visualise:",
                              choices = colnames(read_file()))
   })
   
   update_list <- reactive({
-    choice_list = colnames(read_file())
-    choice_list
+    colnames(read_file())
   })
   
   selected <- reactive({
-    curr_selected <- input$col_choice
-    curr_selected
+    input$col_choice
   })
   
   countries <- reactive({
-    col <- input$country_col
-    col
+    input$country_col
+  })
+  
+  ctype <- reactive({
+    input$type
   })
   
   col1 <- reactive({
@@ -82,11 +93,19 @@ server <- function(input, output, session) {
     input$color2
   })
   
+  col3 <- reactive({
+    input$color3
+  })
+  
+  three_colors <- reactive({
+    input$third_color
+  })
+  
   read_file <- reactive({
     inFile <- input$filebrowse
     if (is.null(inFile))
       return(NULL)
-    df <- read.csv(inFile$datapath, header=T, sep=";", fileEncoding="UTF-8-BOM")
+    df <- read.csv(inFile$datapath, header=T, sep = input$sep, fileEncoding="UTF-8-BOM")
     return(df)
   })
   
@@ -97,10 +116,17 @@ server <- function(input, output, session) {
     }
     else{
       country_col <- countries()
+      ctype <- ctype()
       data_type <- selected()
       color1 <- col1()
       color2 <- col2()
-      p = plot_map(df, country_col, data_type, color1, color2)
+      if (three_colors()){
+        color3 <- col3()
+      }
+      else{
+        color3 <- NULL
+      }
+      p = plot_map(df, country_col, ctype, data_type, color1, color2, color3)
     }
   })
   
@@ -121,5 +147,8 @@ server <- function(input, output, session) {
     })
 }
 
-# Run the application 
+# Run the application
+
+options(shiny.host = "127.0.0.1")
+options(shiny.port = 1234)
 shinyApp(ui = ui, server = server)
