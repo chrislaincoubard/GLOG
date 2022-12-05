@@ -41,7 +41,7 @@ ui <- fluidPage(
           condition = 'input.master === "Plots"',
           conditionalPanel(
             condition = "output.fileUploaded == true",
-            textInput("currentChoice", "Choose which country to show", value = "WORLD", width = NULL, placeholder = NULL)            
+            selectizeInput("currentChoice", "Choose which country to show",choices="World")          
           )
         )
       
@@ -68,50 +68,58 @@ ui <- fluidPage(
 
 server <- function(input, output,session) {
   
-  output$plot_stats <- renderPlot(
-    if ((!(is.null(RV$X))) & (!(is.null(RV$Y)))) {
-      df <- read_file()
-      if (is.null(input$row_choice)){
-        ggplot(data   =df,
-               mapping = aes(x = unlist(df[RV$X]),
-                             y = unlist(df[RV$Y]))) + geom_point(col="#058E40") + ggtitle("Plot of x by Y") +
-          xlab(RV$X) + ylab(RV$Y)
-
-      }
-      else {
-        df2 <- df[df[,input$filter] %in% c(input$row_choice),]
-
-        ggplot(data   =df2,
-               mapping = aes(x = unlist(df2[RV$X]),
-                             y = unlist(df2[RV$Y]))) + geom_point(col="#058E40")  +
-          xlab(RV$X) + ylab(RV$Y)
-      }
-    }
-
-  )
+  # output$plot_stats <- renderPlot(
+  #   if ((!(is.null(RV$X))) & (!(is.null(RV$Y)))) {
+  #     df <- read_file()
+  #     if (is.null(input$row_choice)){
+  #       ggplot(data   =df,
+  #              mapping = aes(x = unlist(df[RV$X]),
+  #                            y = unlist(df[RV$Y]))) + geom_point(col="#058E40") + ggtitle("Plot of x by Y") +
+  #         xlab(RV$X) + ylab(RV$Y)
+  # 
+  #     }
+  #     else {
+  #       df2 <- df[df[,input$filter] %in% c(input$row_choice),]
+  # 
+  #       ggplot(data   =df2,
+  #              mapping = aes(x = unlist(df2[RV$X]),
+  #                            y = unlist(df2[RV$Y]))) + geom_point(col="#058E40")  +
+  #         xlab(RV$X) + ylab(RV$Y)
+  #     }
+  #   }
+  # 
+  # )
   
   
   output$plotTest <- renderPlot({
+    if (!is.null(read_file())){
     df = read_file()
     df$date = as.Date(df$date,"%Y-%m-%d")
-    subCase = df[df$location=='World',c("total_cases")]
-    subTime = df[df$location=='World',c("date")]
+    subCase = df[df$location== input$currentChoice,c("total_cases")]
+    subTime = df[df$location== input$currentChoice,c("date")]
     plot(subCase ~ subTime, df, xaxt = "n", type = "l",
          main= "Nombre de cas confirmé depuis le 1er mai 2022",
          xlab= "Date",
          ylab= "Nombre total de cas enregistré."
          
          )
-    axis(1, df$date, format(df$date, "%b %d"), cex.axis = .7)
-  })
+    axis(1, df$date, format(df$date, "%b %d"), cex.axis = .9)
+  }})
   
   output$plotDeath <- renderPlot({
+    if (!is.null(read_file())){
     df = read_file()
     df$date = as.Date(df$date,"%Y-%m-%d")
-    subDeath = df[df$location=='World',c("total_deaths")]
-    subTime = df[df$location=='World',c("date")]
+    subDeath = df[df$location== input$currentChoice,c("total_deaths")]
+    subTime = df[df$location== input$currentChoice,c("date")]
     plot(subDeath ~ subTime, df, xaxt = "n", type = "l")
-    axis(1, df$date, format(df$date, "%b %d"), cex.axis = .7)
+    axis(1, df$date, format(df$date, "%b %d"), cex.axis = .9)
+  }})
+  
+  observe({
+    updateSelectizeInput(session, "currentChoice",
+                            choices = unique(read_file()$location))
+
   })
   
   read_file <- reactive({
@@ -360,27 +368,6 @@ server <- function(input, output,session) {
     
   })
 
-  # output$plot_stats <- renderPlot(
-  #   if ((!(is.null(RV$X))) & (!(is.null(RV$Y)))) {
-  #     df <- read_file()
-  #     if (is.null(input$row_choice)){
-  #       ggplot(data   =df,              
-  #              mapping = aes(x = unlist(df[RV$X]),   
-  #                            y = unlist(df[RV$Y]))) + geom_point(col="#058E40") + ggtitle("Plot of x by Y") +
-  #         xlab(RV$X) + ylab(RV$Y)
-  # 
-  #     }
-  #     else {
-  #       df2 <- df[df[,input$filter] %in% c(input$row_choice),]
-  #       
-  #       ggplot(data   =df2,              
-  #              mapping = aes(x = unlist(df2[RV$X]),   
-  #                            y = unlist(df2[RV$Y]))) + geom_point(col="#058E40")  +
-  #         xlab(RV$X) + ylab(RV$Y)
-  #     }
-  #   }
-  #   
-  # )
   
   output$text_stats <- renderText ({
     final_msg = ""
