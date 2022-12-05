@@ -13,9 +13,10 @@ ui <- fluidPage(
                    selected = ","),
       
       fileInput("filechoser", label = "Choose a file", accept = ".csv"),
-      
+      conditionalPanel(
+        condition = 'input.master === "Display"',
       varSelectizeInput("test", "TEST", data = ""),
-      
+      ),
       #pour afficher l'UI de façon conditionnelle
       conditionalPanel(
         condition = "output.fileUploaded == true",
@@ -49,8 +50,12 @@ ui <- fluidPage(
     mainPanel(
       tabsetPanel(id = "master",
                   tabPanel("Display", dataTableOutput("contents")),
-                  tabPanel("Stats", verbatimTextOutput("text_stats")),
-                  tabPanel("Plots", plotOutput("plot_stats"))),
+                  tabPanel("Stats", 
+                           conditionalPanel(
+                           condition = 'input.master === "Stats"',
+                           verbatimTextOutput("text_stats")),
+                  ),
+                  tabPanel("Plots", )),
                   conditionalPanel(
                   condition = 'input.master === "Plots"',
                   plotOutput("plotTest"),
