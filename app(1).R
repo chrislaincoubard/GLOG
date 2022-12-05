@@ -97,12 +97,13 @@ server <- function(input, output,session) {
     df$date = as.Date(df$date,"%Y-%m-%d")
     # Creation du sub dataframe utilisé par ggplot2
     subdf = data.frame(
-      subTime = df[df$location== input$currentChoice,c("date")],
-      subCase = df[df$location== input$currentChoice,c("total_cases")]
+      location = df[(df$location==input$currentChoice | df$location=="World"),c("location")],
+      subTime = df[(df$location==input$currentChoice | df$location=="World"),c("date")],
+      subCase = df[(df$location== input$currentChoice | df$location=="World"),c("total_cases")]
     )
     # Creation du plot
-    ggplot(subdf, aes(x = subTime, y = subCase)) +
-      geom_line(colour = "darkgreen", size = 1.5) 
+    ggplot(subdf, aes(x = subTime, y = subCase,colour = location, group =location)) +
+      geom_line() 
       
   }})
   
@@ -117,8 +118,8 @@ server <- function(input, output,session) {
       subCase = df[(df$location== input$currentChoice | df$location=="World"),c("total_deaths")]
     )
     # Creation du plot
-    ggplot(subdf, aes(x = subTime, y = subCase)) +
-      geom_line(colour = "red", size = 1.5) 
+    ggplot(subdf, aes(x = subTime, y = subCase, colour=location, group=location)) +
+      geom_line() 
   }})
   
   observe({
