@@ -33,6 +33,8 @@ ui <- fluidPage(
           actionButton("sum_btn", "Calculate sum"),
           actionButton("ratio_btn", "Calculate ratio"),
           actionButton("prop_btn", "Calculate proportion"),
+          actionButton("prev_btn", "Calculate prevalence"),
+          actionButton("death_btn", "Calculate Death rate"),
           actionButton("reset", "Reset")),
         conditionalPanel(
           condition = 'input.master === "Plots"',
@@ -148,10 +150,20 @@ server <- function(input, output,session) {
   })
   
   observeEvent(input$reset, {
-    RV$ratio = c()
+    RV$num = c()
+    RV$den = c()
   })
   observeEvent(input$reset, {
-    RV$prop = c()
+    RV$nump = c()
+    RV$denp = c()
+  })
+  observeEvent(input$reset, {
+    RV$cas = c()
+    RV$tp = c()
+  })
+  observeEvent(input$reset, {
+    RV$death = c()
+    RV$tc = c()
   })
   
   observeEvent(input$mean_btn, {
@@ -221,7 +233,36 @@ server <- function(input, output,session) {
         )
       ))
     })
+
+    observeEvent(input$prev_btn, {
+      # display a modal dialog (popup)
+      showModal(modalDialog(
+        tags$h2('Please Choose the column corresponding to cases'),
+        checkboxGroupInput("cases", "Cases ", 
+                           choices = colnames(read_file())),
+        numericInput("totpop", "Total population", 
+                           1),
+        footer=tagList(
+          actionButton('submit', 'Submit'),
+          modalButton('cancel')
+        )
+      ))
+    })
     
+    observeEvent(input$death_btn, {
+      # display a modal dialog (popup)
+      showModal(modalDialog(
+        tags$h2('Please Choose the columns you want to use compute the death rate'),
+        checkboxGroupInput("deaths", "Deaths", 
+                           choices = colnames(read_file())),
+        checkboxGroupInput("totcases", "Total cases", 
+                           choices = colnames(read_file())),
+        footer=tagList(
+          actionButton('submit', 'Submit'),
+          modalButton('cancel')
+        )
+      ))
+    })
   observeEvent(input$plot, {
     df <- read_file()
     showModal(modalDialog(
@@ -280,6 +321,20 @@ server <- function(input, output,session) {
     removeModal()
     RV$nump <- input$prop_num
     RV$denp <- input$prop_den
+    
+  })
+  
+  observeEvent(input$submit, {
+    removeModal()
+    RV$cas <- input$cases
+    RV$tp <- input$totpop
+    
+  })
+  
+  observeEvent(input$submit, {
+    removeModal()
+    RV$death <- input$deaths
+    RV$tc <- input$totcases
     
   })
   
@@ -356,6 +411,22 @@ server <- function(input, output,session) {
           
           prop = sum(as.numeric(unlist(na.omit(df[RV$nump]))))/(sum(as.numeric(unlist(na.omit(df[RV$denp])))) + sum(as.numeric(unlist(na.omit(df[RV$nump])))))
           final_msg = paste(final_msg, "La proportion est de", prop, "\n")
+        }
+        
+        if (length(RV$cas >1)){
+          
+          prev = sum(as.numeric(unlist(na.omit(df[RV$cas]))))/RV$tp
+          binom = binom.test(sum(as.numeric(unlist(na.omit(df[RV$cas])))),RV$tp,p=0,alternative="less",conf.level=.95)
+          pvalue = binom$p.value
+          final_msg = paste(final_msg, "La prevalence est de", prev, "\n")
+          final_msg = paste(final_msg, "Le binom test(alternative less, 95%) a pour pvalue", pvalue, "\n")
+          
+        }
+        
+        if (length(RV$death >1 & RV$tc >1)){
+          
+          d_rate = sum(as.numeric(unlist(na.omit(df[RV$death]))))/(sum(as.numeric(unlist(na.omit(df[RV$tc])))))
+          final_msg = paste(final_msg, "Le taux de mortalite est de", d_rate, "\n")
         }
         
     paste(final_msg, sep = "\n")
