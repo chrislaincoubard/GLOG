@@ -95,25 +95,30 @@ server <- function(input, output,session) {
     if (!is.null(read_file())){
     df = read_file()
     df$date = as.Date(df$date,"%Y-%m-%d")
-    subCase = df[df$location== input$currentChoice,c("total_cases")]
-    subTime = df[df$location== input$currentChoice,c("date")]
-    plot(subCase ~ subTime, df, xaxt = "n", type = "l",
-         main= "Nombre de cas confirmé depuis le 1er mai 2022",
-         xlab= "Date",
-         ylab= "Nombre total de cas enregistré."
-         
-         )
-    axis(1, df$date, format(df$date, "%b %d"), cex.axis = .9)
+    # Creation du sub dataframe utilisé par ggplot2
+    subdf = data.frame(
+      subTime = df[df$location== input$currentChoice,c("date")],
+      subCase = df[df$location== input$currentChoice,c("total_cases")]
+    )
+    # Creation du plot
+    ggplot(subdf, aes(x = subTime, y = subCase)) +
+      geom_line(colour = "darkgreen", size = 1.5) 
+      
   }})
   
   output$plotDeath <- renderPlot({
     if (!is.null(read_file())){
     df = read_file()
     df$date = as.Date(df$date,"%Y-%m-%d")
-    subDeath = df[df$location== input$currentChoice,c("total_deaths")]
-    subTime = df[df$location== input$currentChoice,c("date")]
-    plot(subDeath ~ subTime, df, xaxt = "n", type = "l")
-    axis(1, df$date, format(df$date, "%b %d"), cex.axis = .9)
+    # Creation du sub dataframe utilisé par ggplot2
+    subdf = data.frame(
+      location = df[(df$location==input$currentChoice | df$location=="World"),c("location")],
+      subTime = df[(df$location==input$currentChoice | df$location=="World"),c("date")],
+      subCase = df[(df$location== input$currentChoice | df$location=="World"),c("total_deaths")]
+    )
+    # Creation du plot
+    ggplot(subdf, aes(x = subTime, y = subCase)) +
+      geom_line(colour = "red", size = 1.5) 
   }})
   
   observe({
@@ -126,7 +131,7 @@ server <- function(input, output,session) {
     inFile <- input$filechoser
     if (is.null(inFile))
       return(NULL)
-    df <- read.csv(inFile$datapath, header = TRUE, sep = input$sep)  
+    df <- read.csv(inFile$datapath, header = TRUE, sep = input$sep, fileEncoding="UTF-8-BOM")  
     return(df)
   })
   #Pour stocker les résultats des popups
