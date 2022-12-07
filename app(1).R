@@ -39,12 +39,18 @@ ui <- fluidPage(
           actionButton("death_btn", "Calculate Death rate"),
           actionButton("incidence", "Incidence Rate and Confidence Interval"),
           actionButton("reset", "Reset")),
+        
+        ##### PLOT Inputs #####
         conditionalPanel(
           condition = 'input.master === "Plots"',
           conditionalPanel(
             condition = "output.fileUploaded == true",
-            selectizeInput("currentChoice", "Choose which country to show",choices="World"),
-            actionButton("plot", "Plot")
+            ### Input for the user to choose which column to use ###
+            varSelectizeInput("countryName", "Column containing the country name", data = "Select file first"),
+            varSelectizeInput("colTime", "Column containing time reference", data = "Select file first"),
+            varSelectizeInput("colInterest", "Data to visualise", data = "Select file first"),
+            ### Input the countries of interest ###
+            selectizeInput("currentChoice", "Choose which country to show",choices="World",multiple=TRUE),
           )
         )
         
@@ -61,9 +67,7 @@ ui <- fluidPage(
                   tabPanel("Plots", )),
       conditionalPanel(
         condition = 'input.master === "Plots"',
-        plotOutput("plot_stats"),
-        # plotOutput("plotTest"),
-        # plotOutput("plotDeath")
+        plotOutput("plotTest"),
       )
     )
   )
@@ -72,46 +76,52 @@ ui <- fluidPage(
 
 server <- function(input, output,session) {
   
+############## PLOT Reactive function ##############
+  
+  ### PLOT 1
+  output$plotTest <- renderPlot({
+    if (!is.null(read_file())){
+      df = read_file()
+      df$date = as.Date(df$date,"%Y-%m-%d")
+      # Creation du sub dataframe utilisé par ggplot2
+      filter = df[,as.character(input$countryName)]==input$currentChoice
+      subdf = data.frame(
+        location = df[filter,as.character(input$countryName)],
+        subTime = df[df$location==input$currentChoice,as.character(input$colTime)],
+        subCase = df[df$location== input$currentChoice,as.character(input$colInterest)]
+      )
+      # Creation du plot
+      ggplot(subdf, aes(x = subTime, y = subCase,colour = location, group =location)) +
+        geom_line()+
+        ggtitle("Number of total cases by time")
+
+    }})
 
   
-
-  
-  # output$plotTest <- renderPlot({
-  #   if (!is.null(read_file())){
-  #     df = read_file()
-  #     df$date = as.Date(df$date,"%Y-%m-%d")
-  #     # Creation du sub dataframe utilisé par ggplot2
-  #     subdf = data.frame(
-  #       location = df[(df$location==input$currentChoice | df$location=="World"),c("location")],
-  #       subTime = df[(df$location==input$currentChoice | df$location=="World"),c("date")],
-  #       subCase = df[(df$location== input$currentChoice | df$location=="World"),c("total_cases")]
-  #     )
-  #     # Creation du plot
-  #     ggplot(subdf, aes(x = subTime, y = subCase,colour = location, group =location)) +
-  #       geom_line() 
-  #     
-  #   }})
-  
-  # output$plotDeath <- renderPlot({
-  #   if (!is.null(read_file())){
-  #     df = read_file()
-  #     df$date = as.Date(df$date,"%Y-%m-%d")
-  #     # Creation du sub dataframe utilisé par ggplot2
-  #     subdf = data.frame(
-  #       location = df[(df$location==input$currentChoice | df$location=="World"),c("location")],
-  #       subTime = df[(df$location==input$currentChoice | df$location=="World"),c("date")],
-  #       subCase = df[(df$location== input$currentChoice | df$location=="World"),c("total_deaths")]
-  #     )
-  #     # Creation du plot
-  #     ggplot(subdf, aes(x = subTime, y = subCase, colour=location, group=location)) +
-  #       geom_line() 
-  #   }})
+  ########## Reactive function for the plots input ################# 
   
   observe({
     updateSelectizeInput(session, "currentChoice",
-                         choices = unique(read_file()$location))
+                         choices = unique(read_file()$location,selected="Austria"))
     
   })
+  
+  observe({
+    updateVarSelectizeInput(session, "countryName", 
+                            data = read_file())
+  })
+  
+  observe({
+    updateVarSelectizeInput(session, "colTime", 
+                            data = read_file())
+  })
+  
+  observe({
+    updateVarSelectizeInput(session, "colInterest", 
+                            data = read_file())
+  })
+  
+  ############ READ CSV FUNCTION ##################
   
   read_file <- reactive({
     inFile <- input$filechoser
