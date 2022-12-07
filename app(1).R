@@ -189,7 +189,11 @@ server <- function(input, output,session) {
     updateSelectizeInput(session, "mean_choice", selected = " " )
     df <- read_file()
     output$text_stats <- renderText ({
+      
       for (value in unlist(RV$mean)){
+        if (!(is.null(input$row_choice))){
+          df <- df[df[,input$filter] %in% c(input$row_choice),]        
+          }
         moy <- mean(as.numeric(unlist(na.omit(df[value]))))
         final_msg = paste(final_msg, "Mean of", value," = ", moy, "\n")
       }
@@ -226,6 +230,9 @@ server <- function(input, output,session) {
     final_msg = msg_stat()
     output$text_stats <- renderText ({
       for (value in unlist(RV$stdev)){
+        if (!(is.null(input$row_choice))){
+          df <- df[df[,input$filter] %in% c(input$row_choice),]        
+        }
         var = var(as.numeric(unlist(na.omit(df[value]))))
         final_msg = paste(final_msg, "", var, "\n")
       }
@@ -263,6 +270,9 @@ server <- function(input, output,session) {
     final_msg = msg_stat()
     output$text_stats <- renderText ({
       for (value in unlist(RV$sum)){
+        if (!(is.null(input$row_choice))){
+          df <- df[df[,input$filter] %in% c(input$row_choice),]        
+        }
         sum = sum(as.numeric(unlist(na.omit(df[value]))))
         final_msg = paste(final_msg, "La somme est de", sum, "\n")
       }
@@ -303,6 +313,9 @@ server <- function(input, output,session) {
     df <- read_file()
     final_msg = msg_stat()
     output$text_stats <- renderText ({
+      if (!(is.null(input$row_choice))){
+        df <- df[df[,input$filter] %in% c(input$row_choice),]        
+      }
       ratio = sum(as.numeric(unlist(na.omit(df[RV$num]))))/sum(as.numeric(unlist(na.omit(df[RV$den]))))
       final_msg = paste(final_msg, "Le ratio est de", ratio, "\n")
     })
@@ -341,6 +354,10 @@ server <- function(input, output,session) {
     df <- read_file()
     final_msg = msg_stat()
     output$text_stats <- renderText ({
+      df <- read_file()
+      if (!(is.null(input$row_choice))){
+        df <- df[df[,input$filter] %in% c(input$row_choice),]        
+      }
       prop = sum(as.numeric(unlist(na.omit(df[RV$nump]))))/(sum(as.numeric(unlist(na.omit(df[RV$denp])))) + sum(as.numeric(unlist(na.omit(df[RV$nump])))))
       final_msg = paste(final_msg, "La proportion est de", prop, "\n")
     })
@@ -378,6 +395,10 @@ server <- function(input, output,session) {
     df <- read_file()
     final_msg = msg_stat()
     output$text_stats <- renderText ({
+      df <- read_file()
+      if (!(is.null(input$row_choice))){
+        df <- df[df[,input$filter] %in% c(input$row_choice),]        
+      }
       prev = sum(as.numeric(unlist(na.omit(df[RV$cas]))))/RV$tp
       binom = binom.test(sum(as.numeric(unlist(na.omit(df[RV$cas])))),RV$tp,p=0,alternative="less",conf.level=.95)
       pvalue = binom$p.value
@@ -421,6 +442,10 @@ server <- function(input, output,session) {
     df <- read_file()
     final_msg <- msg_stat()
     output$text_stats <- renderText ({
+      df <- read_file()
+      if (!(is.null(input$row_choice))){
+        df <- df[df[,input$filter] %in% c(input$row_choice),]        
+      }
       d_rate = sum(as.numeric(unlist(na.omit(df[RV$death]))))/(sum(as.numeric(unlist(na.omit(df[RV$tc])))))
       final_msg = paste(final_msg, "Le taux de mortalite est de", d_rate, "\n") 
     })
@@ -460,7 +485,10 @@ server <- function(input, output,session) {
     df <- read_file()
     final_msg = msg_stat()
     output$text_stats <- renderText ({
-      df = data.frame()
+      df <- read_file()
+      if (!(is.null(input$row_choice))){
+        df <- df[df[,input$filter] %in% c(input$row_choice),]        
+      }
       df$DO = as.Date(df[RV$DO], "%d/%m/%Y")
       df$DDN = as.Date(df[RV$DDN], "%d/%m/%Y")
       df$DM = as.Date(df[RV$DM], "%d/%m/%Y")
@@ -481,24 +509,7 @@ server <- function(input, output,session) {
   })
   
   outputOptions(output, "fileUploaded", suspendWhenHidden = FALSE)
-  
-  output$plot_stats <- renderPlot(
-    if ((!(is.null(RV$X))) & (!(is.null(RV$Y)))) {
-      df <- read_file()
-      if (is.null(input$row_choice)){
-        plot(x = unlist(df[RV$X]), y = unlist(df[RV$Y]), xlab = RV$X, ylab = RV$Y)
-      }
-      else {
-        df2 <- df[df[,input$filter] %in% c(input$row_choice),]
-        plot(unlist(df2[RV$X]), unlist(df2[RV$Y]), xlab = RV$X, ylab = RV$Y)
-      }
-    }
-    
-  )
-  
 
-  output$text_stats <- renderText ({})
-  
 }
 
 shinyApp(ui = ui, server = server)
