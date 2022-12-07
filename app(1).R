@@ -1,6 +1,7 @@
 library(shiny)
 library(dplyr)
 library(ggplot2)
+library(epitools)
 
 ui <- fluidPage(
   titlePanel("GLOG -- STATS"),
@@ -14,8 +15,8 @@ ui <- fluidPage(
       
       fileInput("filechoser", label = "Choose a file", accept = ".csv"),
       conditionalPanel(
-        condition = 'input.master === "Display"',
-      varSelectizeInput("test", "TEST", data = ""),
+        condition = 'input.master == "Display"',
+        varSelectizeInput("test", "TEST", data = ""),
       ),
       #pour afficher l'UI de façon conditionnelle
       conditionalPanel(
@@ -26,7 +27,7 @@ ui <- fluidPage(
                       choices = c("Don't show data" = 0,"Show Selected" = 1)),
           
           checkboxGroupInput("column_choice", "choose the column",
-        )),
+          )),
         conditionalPanel(
           condition = 'input.master === "Stats"',
           actionButton("mean_btn", "Calculate mean"),
@@ -36,96 +37,80 @@ ui <- fluidPage(
           actionButton("prop_btn", "Calculate proportion"),
           actionButton("prev_btn", "Calculate prevalence"),
           actionButton("death_btn", "Calculate Death rate"),
+          actionButton("incidence", "Incidence Rate and Confidence Interval"),
           actionButton("reset", "Reset")),
         conditionalPanel(
           condition = 'input.master === "Plots"',
           conditionalPanel(
             condition = "output.fileUploaded == true",
-            selectizeInput("currentChoice", "Choose which country to show",choices="World")          
+            selectizeInput("currentChoice", "Choose which country to show",choices="World"),
+            actionButton("plot", "Plot")
           )
         )
-      
-    )),
-
+        
+      )),
+    
     mainPanel(
       tabsetPanel(id = "master",
                   tabPanel("Display", dataTableOutput("contents")),
                   tabPanel("Stats", 
                            conditionalPanel(
-                           condition = 'input.master === "Stats"',
-                           verbatimTextOutput("text_stats")),
+                             condition = 'input.master === "Stats"',
+                             verbatimTextOutput("text_stats")),
                   ),
                   tabPanel("Plots", )),
-                  conditionalPanel(
-                  condition = 'input.master === "Plots"',
-                  plotOutput("plotTest"),
-                  plotOutput("plotDeath")
-        )
+      conditionalPanel(
+        condition = 'input.master === "Plots"',
+        plotOutput("plot_stats"),
+        # plotOutput("plotTest"),
+        # plotOutput("plotDeath")
+      )
     )
-)
+  )
 )
 
 
 server <- function(input, output,session) {
   
-  # output$plot_stats <- renderPlot(
-  #   if ((!(is.null(RV$X))) & (!(is.null(RV$Y)))) {
-  #     df <- read_file()
-  #     if (is.null(input$row_choice)){
-  #       ggplot(data   =df,
-  #              mapping = aes(x = unlist(df[RV$X]),
-  #                            y = unlist(df[RV$Y]))) + geom_point(col="#058E40") + ggtitle("Plot of x by Y") +
-  #         xlab(RV$X) + ylab(RV$Y)
-  # 
-  #     }
-  #     else {
-  #       df2 <- df[df[,input$filter] %in% c(input$row_choice),]
-  # 
-  #       ggplot(data   =df2,
-  #              mapping = aes(x = unlist(df2[RV$X]),
-  #                            y = unlist(df2[RV$Y]))) + geom_point(col="#058E40")  +
-  #         xlab(RV$X) + ylab(RV$Y)
-  #     }
-  #   }
-  # 
-  # )
+
   
+
   
-  output$plotTest <- renderPlot({
-    if (!is.null(read_file())){
-    df = read_file()
-    df$date = as.Date(df$date,"%Y-%m-%d")
-    # Creation du sub dataframe utilisé par ggplot2
-    subdf = data.frame(
-      location = df[(df$location==input$currentChoice | df$location=="World"),c("location")],
-      subTime = df[(df$location==input$currentChoice | df$location=="World"),c("date")],
-      subCase = df[(df$location== input$currentChoice | df$location=="World"),c("total_cases")]
-    )
-    # Creation du plot
-    ggplot(subdf, aes(x = subTime, y = subCase,colour = location, group =location)) +
-      geom_line() 
-      
-  }})
+  # output$plotTest <- renderPlot({
+  #   if (!is.null(read_file())){
+  #     df = read_file()
+  #     df$date = as.Date(df$date,"%Y-%m-%d")
+  #     # Creation du sub dataframe utilisé par ggplot2
+  #     subdf = data.frame(
+  #       location = df[(df$location==input$currentChoice | df$location=="World"),c("location")],
+  #       subTime = df[(df$location==input$currentChoice | df$location=="World"),c("date")],
+  #       subCase = df[(df$location== input$currentChoice | df$location=="World"),c("total_cases")]
+  #     )
+  #     # Creation du plot
+  #     ggplot(subdf, aes(x = subTime, y = subCase,colour = location, group =location)) +
+  #       geom_line() 
+  #     
+  #   }})
   
-  output$plotDeath <- renderPlot({
-    if (!is.null(read_file())){
-    df = read_file()
-    df$date = as.Date(df$date,"%Y-%m-%d")
-    # Creation du sub dataframe utilisé par ggplot2
-    subdf = data.frame(
-      location = df[(df$location==input$currentChoice | df$location=="World"),c("location")],
-      subTime = df[(df$location==input$currentChoice | df$location=="World"),c("date")],
-      subCase = df[(df$location== input$currentChoice | df$location=="World"),c("total_deaths")]
-    )
-    # Creation du plot
-    ggplot(subdf, aes(x = subTime, y = subCase, colour=location, group=location)) +
-      geom_line() 
-  }})
+  # output$plotDeath <- renderPlot({
+  #   if (!is.null(read_file())){
+  #     df = read_file()
+  #     df$date = as.Date(df$date,"%Y-%m-%d")
+  #     # Creation du sub dataframe utilisé par ggplot2
+  #     subdf = data.frame(
+  #       location = df[(df$location==input$currentChoice | df$location=="World"),c("location")],
+  #       subTime = df[(df$location==input$currentChoice | df$location=="World"),c("date")],
+  #       subCase = df[(df$location== input$currentChoice | df$location=="World"),c("total_deaths")]
+  #     )
+  #     # Creation du plot
+  #     ggplot(subdf, aes(x = subTime, y = subCase, colour=location, group=location)) +
+  #       geom_line() 
+  #   }})
   
   observe({
     updateSelectizeInput(session, "currentChoice",
-                            choices = unique(read_file()$location))
-
+                         choices = unique(read_file()$location))
+    
   })
   
   read_file <- reactive({
@@ -137,6 +122,7 @@ server <- function(input, output,session) {
   })
   #Pour stocker les résultats des popups
   RV <- reactiveValues(X = NULL, Y = NULL)
+  msg_stat <- reactiveVal("")
   
   observe({
     updateVarSelectizeInput(session, "Test", 
@@ -153,208 +139,341 @@ server <- function(input, output,session) {
   observeEvent(input$filter, {
     df = read_file()
     updateSelectizeInput(session, "row_choice",
-                         choices = df[df$location,])
+                         choices = df[input$filter])
   })
   
+  #reset button
   observeEvent(input$reset, {
-    RV$mean = c()
+    msg_stat("")
+    output$text_stats <- renderText ({
+      paste(msg_stat())
+    })
   })
   
-  observeEvent(input$reset, {
-    RV$stdev = c()
+  ########### DATATABLE DISPLAY ########
+  output$contents <- renderDataTable({
+    if (input$show_df == 1){
+      df <- read_file()
+      df[, input$column_choice, drop = FALSE]
+    }
+    else {
+      NULL
+    }
+    
   })
   
-  observeEvent(input$reset, {
-    RV$sum = c()
-  })
-  
-  observeEvent(input$reset, {
-    RV$num = c()
-    RV$den = c()
-  })
-  observeEvent(input$reset, {
-    RV$nump = c()
-    RV$denp = c()
-  })
-  observeEvent(input$reset, {
-    RV$cas = c()
-    RV$tp = c()
-  })
-  observeEvent(input$reset, {
-    RV$death = c()
-    RV$tc = c()
-  })
-  
+  ##############  Mean  ############
   observeEvent(input$mean_btn, {
-    # display a modal dialog (popup)
+    df <- read_file()
     showModal(modalDialog(
-      tags$h2('Please Choose the columns you want to compute their mean'),
-      checkboxGroupInput("mean_choice", "Mean_choice", 
-                         choices = colnames(read_file())),
+      tags$h2('Please choose the columns to compute their respective mean :'),
+      selectInput("mean_choice", "Mean_choice", 
+                         choices = colnames(df), selected = " ", multiple = TRUE),
+      selectInput("filter", "Filter",
+                  choices = colnames(df)),
+      selectizeInput("row_choice","Choose individuals to keep",
+                     choices = unlist(df[input$filter]),
+                     selected = " ",
+                     multiple = TRUE),
       footer=tagList(
-        actionButton('submit', 'Submit'),
+        actionButton('submit_mean', 'Submit'),
         modalButton('cancel')
       )
     ))
   })
-    observeEvent(input$stdev_btn, {
-      # display a modal dialog (popup)
-      showModal(modalDialog(
-        tags$h2('Please Choose the columns you want to compute their standard deviation'),
-        checkboxGroupInput("stdev_choice", "Stdev_choice", 
-                           choices = colnames(read_file())),
-        footer=tagList(
-          actionButton('submit', 'Submit'),
-          modalButton('cancel')
-        )
-      ))
+  
+  observeEvent(input$submit_mean, {
+    removeModal()
+    RV$mean <- input$mean_choice
+    final_msg = msg_stat()
+    updateSelectizeInput(session, "mean_choice", selected = " " )
+    df <- read_file()
+    output$text_stats <- renderText ({
+      for (value in unlist(RV$mean)){
+        moy <- mean(as.numeric(unlist(na.omit(df[value]))))
+        final_msg = paste(final_msg, "Mean of", value," = ", moy, "\n")
+      }
+      msg_stat(final_msg)
+      final_msg
+    })
+    
   })
   
-    observeEvent(input$sum_btn, {
-      # display a modal dialog (popup)
-      showModal(modalDialog(
-        tags$h2('Please Choose the columns you want to compute their sum'),
-        checkboxGroupInput("sum_choice", "Sum_choice", 
-                           choices = colnames(read_file())),
-        footer=tagList(
-          actionButton('submit', 'Submit'),
-          modalButton('cancel')
-        )
-      ))
-    })
-    
-    observeEvent(input$ratio_btn, {
-      # display a modal dialog (popup)
-      showModal(modalDialog(
-        tags$h2('Please Choose the columns you want to compute their ratio'),
-        checkboxGroupInput("ratio_num", "Numerator", 
-                           choices = colnames(read_file())),
-        checkboxGroupInput("ratio_den", "Denominator", 
-                           choices = colnames(read_file())),
-        footer=tagList(
-          actionButton('submit', 'Submit'),
-          modalButton('cancel')
-        )
-      ))
-    })
-    
-    observeEvent(input$prop_btn, {
-      # display a modal dialog (popup)
-      showModal(modalDialog(
-        tags$h2('Please Choose the columns you want to use compute the proportion'),
-        checkboxGroupInput("prop_num", "Numerator", 
-                           choices = colnames(read_file())),
-        checkboxGroupInput("prop_den", "Denominator", 
-                           choices = colnames(read_file())),
-        footer=tagList(
-          actionButton('submit', 'Submit'),
-          modalButton('cancel')
-        )
-      ))
-    })
-
-    observeEvent(input$prev_btn, {
-      # display a modal dialog (popup)
-      showModal(modalDialog(
-        tags$h2('Please Choose the column corresponding to cases'),
-        checkboxGroupInput("cases", "Cases ", 
-                           choices = colnames(read_file())),
-        numericInput("totpop", "Total population", 
-                           1),
-        footer=tagList(
-          actionButton('submit', 'Submit'),
-          modalButton('cancel')
-        )
-      ))
-    })
-    
-    observeEvent(input$death_btn, {
-      # display a modal dialog (popup)
-      showModal(modalDialog(
-        tags$h2('Please Choose the columns you want to use compute the death rate'),
-        checkboxGroupInput("deaths", "Deaths", 
-                           choices = colnames(read_file())),
-        checkboxGroupInput("totcases", "Total cases", 
-                           choices = colnames(read_file())),
-        footer=tagList(
-          actionButton('submit', 'Submit'),
-          modalButton('cancel')
-        )
-      ))
-    })
-  observeEvent(input$plot, {
+  ##################  STDEV  ###############
+  observeEvent(input$stdev_btn, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2("Please choose your axis"),
-       selectInput(inputId = "X_axis",label = "X axis",
-                   choices = colnames(df)),
-       selectInput(inputId = "Y_axis", label = "Y axis",
-                   choices = colnames(df)),
+      tags$h2('Please choose the columns to compute their respective standard deviation :'),
+      selectInput("stdev_choice", "Stdev_choice", 
+                         choices = colnames(df), selected = " ", multiple = TRUE),
       selectInput("filter", "Filter",
                   choices = colnames(df)),
       selectizeInput("row_choice","Choose individuals to keep",
-                       choices = unlist(df[input$filter]),
-                       selected = " ",
+                     choices = unlist(df[input$filter]),
+                     selected = " ",
                      multiple = TRUE),
-      
-      footer = tagList(
-        actionButton('submit_plot', "Submit"),
+      footer=tagList(
+        actionButton('submit_std', 'Submit'),
         modalButton('cancel')
-      ))
-      
-      
-    )
+      )
+    ))
+  })
+  
+  observeEvent(input$submit_std, {
+    removeModal()
+    RV$stdev <- input$stdev_choice
+    df <- read_file()
+    final_msg = msg_stat()
+    output$text_stats <- renderText ({
+      for (value in unlist(RV$stdev)){
+        var = var(as.numeric(unlist(na.omit(df[value]))))
+        final_msg = paste(final_msg, "", var, "\n")
+      }
+      msg_stat(final_msg)
+      final_msg
+    })
     
   })
   
-  observeEvent(input$submit_plot, {
-    removeModal()
-    RV$X <- input$X_axis
-    RV$Y <- input$Y_axis
-    RV$row_choice <- input$row_choice
+  ################ SUM ##############
+  
+  observeEvent(input$sum_btn, {
+    df <- read_file()
+    showModal(modalDialog(
+      tags$h2('Please choose the columns to compute their respective sum :'),
+      selectInput("sum_choice", "Sum_choice", 
+                         choices = colnames(df),selected = " ", multiple = TRUE),
+      selectInput("filter", "Filter",
+                  choices = colnames(df)),
+      selectizeInput("row_choice","Choose individuals to keep",
+                     choices = unlist(df[input$filter]),
+                     selected = " ",
+                     multiple = TRUE),
+      footer=tagList(
+        actionButton('submit_sum', 'Submit'),
+        modalButton('cancel')
+      )
+    ))
   })
   
-  observeEvent(input$submit, {
-      removeModal()
-      RV$mean <- input$mean_choice
-  })
-  
-  observeEvent(input$submit, {
-    removeModal()
-    RV$stdev <- input$stdev_choice
-  })
-  
-  observeEvent(input$submit, {
+  observeEvent(input$submit_sum, {
     removeModal()
     RV$sum <- input$sum_choice
+    df <- read_file()
+    final_msg = msg_stat()
+    output$text_stats <- renderText ({
+      for (value in unlist(RV$sum)){
+        sum = sum(as.numeric(unlist(na.omit(df[value]))))
+        final_msg = paste(final_msg, "La somme est de", sum, "\n")
+      }
+      msg_stat(final_msg)
+      final_msg
+    })
+    
   })
   
-  observeEvent(input$submit, {
+  ######### RATIO ######
+  observeEvent(input$ratio_btn, {
+    df <- read_file()
+    showModal(modalDialog(
+      tags$h2('Please choose the columns to compute their ratio :'),
+      selectInput("ratio_num", "Numerator", 
+                         choices = colnames(df), selected = " "),
+      selectInput("ratio_den", "Denominator", 
+                         choices = colnames(df), selected = " "),
+      selectInput("filter", "Filter",
+                  choices = colnames(df)),
+      selectizeInput("row_choice","Choose individuals to keep",
+                     choices = unlist(df[input$filter]),
+                     selected = " ",
+                     multiple = TRUE),
+      footer=tagList(
+        actionButton('submit_ratio', 'Submit'),
+        modalButton('cancel')
+      )
+    ))
+  })
+  
+  
+  observeEvent(input$submit_ratio, {
     removeModal()
     RV$num <- input$ratio_num
     RV$den <- input$ratio_den
-    
+    final_msg = msg_stat()
+    df <- read_file()
+    final_msg = msg_stat()
+    output$text_stats <- renderText ({
+      ratio = sum(as.numeric(unlist(na.omit(df[RV$num]))))/sum(as.numeric(unlist(na.omit(df[RV$den]))))
+      final_msg = paste(final_msg, "Le ratio est de", ratio, "\n")
+    })
+    msg_stat(final_msg)
+    final_msg
   })
   
-  observeEvent(input$submit, {
+  
+  ######## PROP ########
+  
+  observeEvent(input$prop_btn, {
+    df <- read_file()
+    showModal(modalDialog(
+      tags$h2('Please choose the columns to compoute their proportion :'),
+     selectInput("prop_num", "Numerator", 
+                         choices = colnames(df), selected = " "),
+      selectInput("prop_den", "Denominator", 
+                         choices = colnames(df), selected = " "),
+     selectInput("filter", "Filter",
+                 choices = colnames(df)),
+      selectizeInput("row_choice","Choose individuals to keep",
+                     choices = unlist(df[input$filter]),
+                     selected = " ",
+                     multiple = TRUE),
+      footer=tagList(
+        actionButton('submit_prop', 'Submit'),
+        modalButton('cancel')
+      )
+    ))
+  })
+  
+  observeEvent(input$submit_prop, {
     removeModal()
     RV$nump <- input$prop_num
     RV$denp <- input$prop_den
-    
+    df <- read_file()
+    final_msg = msg_stat()
+    output$text_stats <- renderText ({
+      prop = sum(as.numeric(unlist(na.omit(df[RV$nump]))))/(sum(as.numeric(unlist(na.omit(df[RV$denp])))) + sum(as.numeric(unlist(na.omit(df[RV$nump])))))
+      final_msg = paste(final_msg, "La proportion est de", prop, "\n")
+    })
+    msg_stat(final_msg)
+    final_msg
   })
   
-  observeEvent(input$submit, {
+  ########### Prevalence ############
+  
+  observeEvent(input$prev_btn, {
+    df <- read_file()
+    showModal(modalDialog(
+      tags$h2('Please choose the column corresponding to cases'),
+      selectInput("cases", "Cases ", 
+                         choices = colnames(df), selected = " "),
+      numericInput("totpop", "Total population", 
+                   "Choose the total population"),
+      selectInput("filter", "Filter",
+                  choices = colnames(df)),
+      selectizeInput("row_choice","Choose individuals to keep",
+                     choices = unlist(df[input$filter]),
+                     selected = " ",
+                     multiple = TRUE),
+      footer=tagList(
+        actionButton('submit_prevalence', 'Submit'),
+        modalButton('cancel')
+      )
+    ))
+  })
+  
+  observeEvent(input$submit_prevalence, {
     removeModal()
     RV$cas <- input$cases
     RV$tp <- input$totpop
-    
+    df <- read_file()
+    final_msg = msg_stat()
+    output$text_stats <- renderText ({
+      prev = sum(as.numeric(unlist(na.omit(df[RV$cas]))))/RV$tp
+      binom = binom.test(sum(as.numeric(unlist(na.omit(df[RV$cas])))),RV$tp,p=0,alternative="less",conf.level=.95)
+      pvalue = binom$p.value
+      final_msg = paste(final_msg, "La prevalence est de", prev, "\n",
+                        "Le binom test(alternative less, 95%) a pour pvalue",
+                        pvalue, "\n")
+    })
+    msg_stat(final_msg)
+    final_msg
   })
   
-  observeEvent(input$submit, {
+  ############ DEATH RATE ############
+  
+  observeEvent(input$death_btn, {
+    df <- read_file()
+    showModal(modalDialog(
+      tags$h2('Please choose the columns of deaths count and total cases to compute the death rate'),
+      selectInput(inputId = "deaths",label = "Deaths",
+                  choices = colnames(df)),
+      selectInput(inputId = "totcases", label = "Total cases",
+                  choices = colnames(df)),
+      selectInput("filter", "Filter",
+                  choices = colnames(df)),
+      selectizeInput("row_choice","Choose individuals to keep",
+                     choices = unlist(df[input$filter]),
+                     selected = " ",
+                     multiple = TRUE),
+      footer=tagList(
+        actionButton('submit_death_rate', 'Submit'),
+        modalButton('cancel')
+      )
+    ))
+  })
+  
+
+  
+  observeEvent(input$submit_death_rate, {
     removeModal()
     RV$death <- input$deaths
     RV$tc <- input$totcases
-    
+    df <- read_file()
+    final_msg <- msg_stat()
+    output$text_stats <- renderText ({
+      d_rate = sum(as.numeric(unlist(na.omit(df[RV$death]))))/(sum(as.numeric(unlist(na.omit(df[RV$tc])))))
+      final_msg = paste(final_msg, "Le taux de mortalite est de", d_rate, "\n") 
+    })
+    msg_stat(final_msg)
+    final_msg
+  })
+  
+  #################### Incidence ################
+  observeEvent(input$incidence, {
+    df <- read_file()
+    showModal(modalDialog(
+      tags$h2("Please choose your axis"),
+      selectInput(inputId = "DO",label = "Date of origin",
+                  choices = colnames(df)),
+      selectInput(inputId = "DDN", label = "Last news date",
+                  choices = colnames(df)),
+      selectInput("DM", "Date start of disease",
+                  choices = colnames(df)),
+      selectInput("filter", "Filter",
+                  choices = colnames(df)),
+      selectizeInput("row_choice","Choose individuals to keep",
+                     choices = unlist(df[input$filter]),
+                     selected = " ",
+                     multiple = TRUE),
+      
+      footer = tagList(
+        actionButton('submit_incidence', "Submit"),
+        modalButton('cancel'))
+      ))
+  })
+  
+  observeEvent(input$submit_incidence, {
+    removeModal()
+    RV$DO <- input$DO
+    RV$DM <- input$DM
+    RV$DDN <- input$DDN
+    df <- read_file()
+    final_msg = msg_stat()
+    output$text_stats <- renderText ({
+      df = data.frame()
+      df$DO = as.Date(df[RV$DO], "%d/%m/%Y")
+      df$DDN = as.Date(df[RV$DDN], "%d/%m/%Y")
+      df$DM = as.Date(df[RV$DM], "%d/%m/%Y")
+      dd <- subset(df,(DMn>DOn|is.na(DM)))
+      DFn <- pmin(dd$DDNn,dd$DMn,na.rm=TRUE)
+      TP <- DFn-dd$DOn
+      Nst <- sum(TP)
+      Nnm <- nrow(subset(dd,DMn>DOn))
+      result <- pois.exact(Nnm, Nst, conf.level = 0.95)
+      final_msg = paste(final_msg, "Le résultat est le suivant : ", summary(result), "\n")
+    })
+    msg_stat(final_msg)
+    final_msg
   })
   
   output$fileUploaded <- reactive({
@@ -363,75 +482,23 @@ server <- function(input, output,session) {
   
   outputOptions(output, "fileUploaded", suspendWhenHidden = FALSE)
   
-  output$contents <- renderDataTable({
-    if (input$show_df == 1){
+  output$plot_stats <- renderPlot(
+    if ((!(is.null(RV$X))) & (!(is.null(RV$Y)))) {
       df <- read_file()
-      df[, input$column_choice, drop = FALSE]
+      if (is.null(input$row_choice)){
+        plot(x = unlist(df[RV$X]), y = unlist(df[RV$Y]), xlab = RV$X, ylab = RV$Y)
       }
-    else {
-      NULL
+      else {
+        df2 <- df[df[,input$filter] %in% c(input$row_choice),]
+        plot(unlist(df2[RV$X]), unlist(df2[RV$Y]), xlab = RV$X, ylab = RV$Y)
+      }
     }
     
-  })
-
+  )
   
-  output$text_stats <- renderText ({
-    final_msg = ""
-        df = read_file()
-        if (length(RV$mean >1)){
-          for (value in unlist(RV$mean)){
-            moy = mean(as.numeric(unlist(na.omit(df[value]))))
-            final_msg = paste(final_msg, "La moyenne est de", moy, "\n")
-          }
-        }
-    
-    if (length(RV$stdev >1)){
-      for (value in unlist(RV$stdev)){
-        var = var(as.numeric(unlist(na.omit(df[value]))))
-        final_msg = paste(final_msg, "La variance est de", var, "\n")
-      }
-    }
-        
-        if (length(RV$sum >1)){
-          for (value in unlist(RV$sum)){
-            sum = sum(as.numeric(unlist(na.omit(df[value]))))
-            final_msg = paste(final_msg, "La somme est de", sum, "\n")
-          }
-        }
-        
-        if (length(RV$num >1 & RV$den >1)){
-          
-          ratio = sum(as.numeric(unlist(na.omit(df[RV$num]))))/sum(as.numeric(unlist(na.omit(df[RV$den]))))
-          final_msg = paste(final_msg, "Le ratio est de", ratio, "\n")
-        }
-        
-        if (length(RV$nump >1 & RV$denp >1)){
-          
-          prop = sum(as.numeric(unlist(na.omit(df[RV$nump]))))/(sum(as.numeric(unlist(na.omit(df[RV$denp])))) + sum(as.numeric(unlist(na.omit(df[RV$nump])))))
-          final_msg = paste(final_msg, "La proportion est de", prop, "\n")
-        }
-        
-        if (length(RV$cas >1)){
-          
-          prev = sum(as.numeric(unlist(na.omit(df[RV$cas]))))/RV$tp
-          binom = binom.test(sum(as.numeric(unlist(na.omit(df[RV$cas])))),RV$tp,p=0,alternative="less",conf.level=.95)
-          pvalue = binom$p.value
-          final_msg = paste(final_msg, "La prevalence est de", prev, "\n")
-          final_msg = paste(final_msg, "Le binom test(alternative less, 95%) a pour pvalue", pvalue, "\n")
-          
-        }
-        
-        if (length(RV$death >1 & RV$tc >1)){
-          
-          d_rate = sum(as.numeric(unlist(na.omit(df[RV$death]))))/(sum(as.numeric(unlist(na.omit(df[RV$tc])))))
-          final_msg = paste(final_msg, "Le taux de mortalite est de", d_rate, "\n")
-        }
-        
-    paste(final_msg, sep = "\n")
-          
-  })
+
+  output$text_stats <- renderText ({})
   
 }
 
 shinyApp(ui = ui, server = server)
-
