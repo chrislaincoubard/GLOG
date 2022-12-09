@@ -48,6 +48,9 @@ ui <- fluidPage(
             ### Input for the user to choose which column to use ###
             varSelectizeInput("countryName", "Column containing the country name", data = "Select file first"),
             varSelectizeInput("colTime", "Column containing time reference", data = "Select file first"),
+            radioButtons("dateFormat", "Date format", 
+                         choices = c(YearMonthDay="%Y-%m-%d",DayMonthYear="%d-%m-%Y",MonthDayYear="%m-%d-%Y"),
+                         selected = "%Y-%m-%d"),
             varSelectizeInput("colInterest", "Data to visualise", data = "Select file first"),
             ### Input the countries of interest ###
             selectizeInput("currentChoice", "Choose which country to show",choices="World",multiple=TRUE),
@@ -82,16 +85,16 @@ server <- function(input, output,session) {
   output$plotTest <- renderPlot({
     if (!is.null(read_file())){
       df = read_file()
-      df$date = as.Date(df$date,"%Y-%m-%d")
+      df$date = as.Date(df$date,input$dateFormat)
       # Creation du sub dataframe utilisé par ggplot2
       filter = df[,as.character(input$countryName)]==input$currentChoice
       subdf = data.frame(
         location = df[filter,as.character(input$countryName)],
-        subTime = df[df$location==input$currentChoice,as.character(input$colTime)],
-        subCase = df[df$location== input$currentChoice,as.character(input$colInterest)]
+        Date = df[filter,as.character(input$colTime)],
+        subCase = df[filter,as.character(input$colInterest)]
       )
       # Creation du plot
-      ggplot(subdf, aes(x = subTime, y = subCase,colour = location, group =location)) +
+      ggplot(subdf, aes(x = Date, y = subCase,colour = location, group =location)) +
         geom_line()+
         ggtitle("Number of total cases by time")
 
@@ -102,7 +105,7 @@ server <- function(input, output,session) {
   
   observe({
     updateSelectizeInput(session, "currentChoice",
-                         choices = unique(read_file()$location,selected="Austria"))
+                         choices = unique(read_file()[,as.character(input$countryName)],selected="Austria"))
     
   })
   
@@ -120,6 +123,7 @@ server <- function(input, output,session) {
     updateVarSelectizeInput(session, "colInterest", 
                             data = read_file())
   })
+  
   
   ############ READ CSV FUNCTION ##################
   
