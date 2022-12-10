@@ -5,7 +5,7 @@ library(epitools)
 library(data.table)
 
 ui <- fluidPage(
-  titlePanel("GLOG -- STATS"),
+  titlePanel("Statistics calculator for epidemiology"),
   
   sidebarLayout(
     sidebarPanel(
@@ -338,7 +338,7 @@ server <- function(input, output,session) {
   observeEvent(input$prop_btn, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2('Please choose the columns to compoute their proportion :'),
+      tags$h2('Please choose the columns to compute their proportion :'),
       selectInput("prop_num", "Numerator", 
                   choices = colnames(df), selected = " "),
       selectInput("prop_den", "Denominator", 
@@ -378,6 +378,8 @@ server <- function(input, output,session) {
   observeEvent(input$prev_btn, {
     df <- read_file()
     showModal(modalDialog(
+      helpText("Choose in your data the columns of deaths count and total cases",
+               "You can exclude one or multiple line before computing the result."),
       tags$h2('Please choose the column corresponding to cases'),
       selectInput("cases", "Cases ", 
                   choices = colnames(df), selected = " "),
@@ -422,7 +424,9 @@ server <- function(input, output,session) {
   observeEvent(input$death_btn, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2('Please choose the columns of deaths count and total cases to compute the death rate'),
+      helpText("Choose in your data the columns of deaths count and total cases",
+               "You can exclude one or multiple line before computing the result."),
+      tags$h2('Please choose the the data'),
       selectInput(inputId = "deaths",label = "Deaths",
                   choices = colnames(df)),
       selectInput(inputId = "totcases", label = "Total cases",
@@ -463,6 +467,8 @@ server <- function(input, output,session) {
   observeEvent(input$incidence, {
     df <- read_file()
     showModal(modalDialog(
+      helpText("Data should have 3 columns with the dates for each individual",
+               "Each line should be an individual")
       tags$h2("Please choose your axis"),
       selectInput(inputId = "DO",label = "Date of origin",
                   choices = colnames(df)),
@@ -513,7 +519,11 @@ server <- function(input, output,session) {
   observeEvent(input$riskratio, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2("Please choose your axis"),
+      helpText("Data should be a contingency table. ",
+               "If you have a confusion factor in tour data you can specify it. ",
+               "Ohterwise, just click submit"),
+      
+      tags$h4("Please choose your axis"),
       selectInput("confusion_factor", "Add Confusion Factor (Optionnal)",
                   choices = c(" ",colnames(df)), selected = " "),
       footer = tagList(
@@ -548,6 +558,9 @@ server <- function(input, output,session) {
   observeEvent(input$oddratio, {
     df <- read_file()
     showModal(modalDialog(
+      helpText("Data should be a contingency table. ",
+               "If you have a confusion factor in tour data you can specify it. ",
+               "Ohterwise, just click submit")
       tags$h2("Please choose your data"),
       selectInput("confusion_factor", "Add Confusion Factor (Optionnal)",
                   choices = c(" ",colnames(df)), selected = " "),
@@ -581,10 +594,11 @@ server <- function(input, output,session) {
   observeEvent(input$incidence_ratio, {
     df <- read_file()
     showModal(modalDialog(
+      helpText("Input the number of inidivduals in each group"),
       tags$h2("Please choose your data"),
       numericInput(inputId = "x1",label = "Number of cases in the non-exposed group", value = 0),
       numericInput(inputId = "x2", label = "Number of cases in the exposed group", value = 0),
-      numericInput("st1", "Number of person-time int the non-exposed group", value = 0),
+      numericInput("st1", "Number of person-time in the non-exposed group", value = 0),
       numericInput("st2", "Number of person-time in the exposed group", value = 0),
       
       footer = tagList(
