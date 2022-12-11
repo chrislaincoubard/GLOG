@@ -38,6 +38,9 @@ ui <- fluidPage(
           actionButton("prev_btn", "Calculate prevalence"),
           actionButton("death_btn", "Calculate Death rate"),
           actionButton("incidence", "Incidence Rate and Confidence Interval"),
+          actionButton("riskratio", "Risk Ratio"),
+          actionButton("oddratio", "Odd Ratio"),
+          actionButton("incidence_ratio", "Incidence Rate Ratio"),
           actionButton("reset", "Reset")),
         
         ##### PLOT Inputs #####
@@ -66,6 +69,7 @@ ui <- fluidPage(
                            conditionalPanel(
                              condition = 'input.master === "Stats"',
                              verbatimTextOutput("text_stats")),
+                              plotOutput("plot_interaction")
                   ),
                   tabPanel("Plots", )),
       conditionalPanel(
@@ -162,6 +166,7 @@ server <- function(input, output,session) {
     output$text_stats <- renderText ({
       paste(msg_stat())
     })
+    output$plot_interaction <- renderPlot({})
   })
   
   ########### DATATABLE DISPLAY ########
@@ -176,16 +181,19 @@ server <- function(input, output,session) {
     
   })
   
+  
+  
+  
   ##############  Mean  ############
   observeEvent(input$mean_btn, {
     df <- read_file()
     showModal(modalDialog(
       tags$h2('Please choose the columns to compute their respective mean :'),
       selectInput("mean_choice", "Mean_choice", 
-                         choices = colnames(df), selected = " ", multiple = TRUE),
+                  choices = colnames(df), selected = " ", multiple = TRUE),
       selectInput("filter", "Filter",
                   choices = colnames(df)),
-      selectizeInput("row_choice","Choose individuals to keep",
+      selectizeInput("row_choice","Choose individuals to exclude",
                      choices = unlist(df[input$filter]),
                      selected = " ",
                      multiple = TRUE),
@@ -202,6 +210,9 @@ server <- function(input, output,session) {
     final_msg = msg_stat()
     updateSelectizeInput(session, "mean_choice", selected = " " )
     df <- read_file()
+    if (!(is.null(input$row_choice))) {
+      df <- df[!(df[,input$filter] %in% c(input$row_choice)),]
+    }
     output$text_stats <- renderText ({
       for (value in unlist(RV$mean)){
         moy <- mean(as.numeric(unlist(na.omit(df[value]))))
@@ -219,10 +230,10 @@ server <- function(input, output,session) {
     showModal(modalDialog(
       tags$h2('Please choose the columns to compute their respective standard deviation :'),
       selectInput("stdev_choice", "Stdev_choice", 
-                         choices = colnames(df), selected = " ", multiple = TRUE),
+                  choices = colnames(df), selected = " ", multiple = TRUE),
       selectInput("filter", "Filter",
                   choices = colnames(df)),
-      selectizeInput("row_choice","Choose individuals to keep",
+      selectizeInput("row_choice","Choose individuals to exclude",
                      choices = unlist(df[input$filter]),
                      selected = " ",
                      multiple = TRUE),
@@ -237,6 +248,9 @@ server <- function(input, output,session) {
     removeModal()
     RV$stdev <- input$stdev_choice
     df <- read_file()
+    if (!(is.null(input$row_choice))) {
+      df <- df[!(df[,input$filter] %in% c(input$row_choice)),]
+    }
     final_msg = msg_stat()
     output$text_stats <- renderText ({
       for (value in unlist(RV$stdev)){
@@ -256,10 +270,10 @@ server <- function(input, output,session) {
     showModal(modalDialog(
       tags$h2('Please choose the columns to compute their respective sum :'),
       selectInput("sum_choice", "Sum_choice", 
-                         choices = colnames(df),selected = " ", multiple = TRUE),
+                  choices = colnames(df),selected = " ", multiple = TRUE),
       selectInput("filter", "Filter",
                   choices = colnames(df)),
-      selectizeInput("row_choice","Choose individuals to keep",
+      selectizeInput("row_choice","Choose individuals to exclude",
                      choices = unlist(df[input$filter]),
                      selected = " ",
                      multiple = TRUE),
@@ -274,6 +288,9 @@ server <- function(input, output,session) {
     removeModal()
     RV$sum <- input$sum_choice
     df <- read_file()
+    if (!(is.null(input$row_choice))) {
+      df <- df[!(df[,input$filter] %in% c(input$row_choice)),]
+    }
     final_msg = msg_stat()
     output$text_stats <- renderText ({
       for (value in unlist(RV$sum)){
@@ -292,12 +309,12 @@ server <- function(input, output,session) {
     showModal(modalDialog(
       tags$h2('Please choose the columns to compute their ratio :'),
       selectInput("ratio_num", "Numerator", 
-                         choices = colnames(df), selected = " "),
+                  choices = colnames(df), selected = " "),
       selectInput("ratio_den", "Denominator", 
-                         choices = colnames(df), selected = " "),
+                  choices = colnames(df), selected = " "),
       selectInput("filter", "Filter",
                   choices = colnames(df)),
-      selectizeInput("row_choice","Choose individuals to keep",
+      selectizeInput("row_choice","Choose individuals to exclude",
                      choices = unlist(df[input$filter]),
                      selected = " ",
                      multiple = TRUE),
@@ -315,6 +332,9 @@ server <- function(input, output,session) {
     RV$den <- input$ratio_den
     final_msg = msg_stat()
     df <- read_file()
+    if (!(is.null(input$row_choice))) {
+      df <- df[!(df[,input$filter] %in% c(input$row_choice)),]
+    }
     final_msg = msg_stat()
     output$text_stats <- renderText ({
       ratio = sum(as.numeric(unlist(na.omit(df[RV$num]))))/sum(as.numeric(unlist(na.omit(df[RV$den]))))
@@ -330,14 +350,14 @@ server <- function(input, output,session) {
   observeEvent(input$prop_btn, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2('Please choose the columns to compoute their proportion :'),
-     selectInput("prop_num", "Numerator", 
-                         choices = colnames(df), selected = " "),
+      tags$h2('Please choose the columns to compute their proportion :'),
+      selectInput("prop_num", "Numerator", 
+                  choices = colnames(df), selected = " "),
       selectInput("prop_den", "Denominator", 
-                         choices = colnames(df), selected = " "),
-     selectInput("filter", "Filter",
-                 choices = colnames(df)),
-      selectizeInput("row_choice","Choose individuals to keep",
+                  choices = colnames(df), selected = " "),
+      selectInput("filter", "Filter",
+                  choices = colnames(df)),
+      selectizeInput("row_choice","Choose individuals to exclude",
                      choices = unlist(df[input$filter]),
                      selected = " ",
                      multiple = TRUE),
@@ -353,6 +373,9 @@ server <- function(input, output,session) {
     RV$nump <- input$prop_num
     RV$denp <- input$prop_den
     df <- read_file()
+    if (!(is.null(input$row_choice))) {
+      df <- df[!(df[,input$filter] %in% c(input$row_choice)),]
+    }
     final_msg = msg_stat()
     output$text_stats <- renderText ({
       prop = sum(as.numeric(unlist(na.omit(df[RV$nump]))))/(sum(as.numeric(unlist(na.omit(df[RV$denp])))) + sum(as.numeric(unlist(na.omit(df[RV$nump])))))
@@ -367,14 +390,16 @@ server <- function(input, output,session) {
   observeEvent(input$prev_btn, {
     df <- read_file()
     showModal(modalDialog(
+      helpText("Choose in your data the columns of deaths count and total cases",
+               "You can exclude one or multiple line before computing the result."),
       tags$h2('Please choose the column corresponding to cases'),
       selectInput("cases", "Cases ", 
-                         choices = colnames(df), selected = " "),
+                  choices = colnames(df), selected = " "),
       numericInput("totpop", "Total population", 
                    "Choose the total population"),
       selectInput("filter", "Filter",
                   choices = colnames(df)),
-      selectizeInput("row_choice","Choose individuals to keep",
+      selectizeInput("row_choice","Choose individuals to exclude",
                      choices = unlist(df[input$filter]),
                      selected = " ",
                      multiple = TRUE),
@@ -390,6 +415,9 @@ server <- function(input, output,session) {
     RV$cas <- input$cases
     RV$tp <- input$totpop
     df <- read_file()
+    if (!(is.null(input$row_choice))) {
+      df <- df[!(df[,input$filter] %in% c(input$row_choice)),]
+    }
     final_msg = msg_stat()
     output$text_stats <- renderText ({
       prev = sum(as.numeric(unlist(na.omit(df[RV$cas]))))/RV$tp
@@ -408,14 +436,16 @@ server <- function(input, output,session) {
   observeEvent(input$death_btn, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2('Please choose the columns of deaths count and total cases to compute the death rate'),
+      helpText("Choose in your data the columns of deaths count and total cases",
+               "You can exclude one or multiple line before computing the result."),
+      tags$h2('Please choose the the data'),
       selectInput(inputId = "deaths",label = "Deaths",
                   choices = colnames(df)),
       selectInput(inputId = "totcases", label = "Total cases",
                   choices = colnames(df)),
       selectInput("filter", "Filter",
                   choices = colnames(df)),
-      selectizeInput("row_choice","Choose individuals to keep",
+      selectizeInput("row_choice","Choose individuals to exclude",
                      choices = unlist(df[input$filter]),
                      selected = " ",
                      multiple = TRUE),
@@ -426,13 +456,16 @@ server <- function(input, output,session) {
     ))
   })
   
-
+  
   
   observeEvent(input$submit_death_rate, {
     removeModal()
     RV$death <- input$deaths
     RV$tc <- input$totcases
     df <- read_file()
+    if (!(is.null(input$row_choice))) {
+      df <- df[!(df[,input$filter] %in% c(input$row_choice)),]
+    }
     final_msg <- msg_stat()
     output$text_stats <- renderText ({
       d_rate = sum(as.numeric(unlist(na.omit(df[RV$death]))))/(sum(as.numeric(unlist(na.omit(df[RV$tc])))))
@@ -446,6 +479,8 @@ server <- function(input, output,session) {
   observeEvent(input$incidence, {
     df <- read_file()
     showModal(modalDialog(
+      helpText("Data should have 3 columns with the dates for each individual",
+               "Each line should be an individual")
       tags$h2("Please choose your axis"),
       selectInput(inputId = "DO",label = "Date of origin",
                   choices = colnames(df)),
@@ -455,7 +490,7 @@ server <- function(input, output,session) {
                   choices = colnames(df)),
       selectInput("filter", "Filter",
                   choices = colnames(df)),
-      selectizeInput("row_choice","Choose individuals to keep",
+      selectizeInput("row_choice","Choose individuals to exclude",
                      choices = unlist(df[input$filter]),
                      selected = " ",
                      multiple = TRUE),
@@ -463,7 +498,7 @@ server <- function(input, output,session) {
       footer = tagList(
         actionButton('submit_incidence', "Submit"),
         modalButton('cancel'))
-      ))
+    ))
   })
   
   observeEvent(input$submit_incidence, {
@@ -472,9 +507,11 @@ server <- function(input, output,session) {
     RV$DM <- input$DM
     RV$DDN <- input$DDN
     df <- read_file()
+    if (!(is.null(input$row_choice))) {
+      df <- df[!(df[,input$filter] %in% c(input$row_choice)),]
+    }
     final_msg = msg_stat()
-    output$text_stats <- renderText ({
-      df = data.frame()
+    output$text_stats <- renderPrint ({
       df$DO = as.Date(df[RV$DO], "%d/%m/%Y")
       df$DDN = as.Date(df[RV$DDN], "%d/%m/%Y")
       df$DM = as.Date(df[RV$DM], "%d/%m/%Y")
@@ -484,14 +521,114 @@ server <- function(input, output,session) {
       Nst <- sum(TP)
       Nnm <- nrow(subset(dd,DMn>DOn))
       result <- pois.exact(Nnm, Nst, conf.level = 0.95)
-      final_msg = paste(final_msg, "Le résultat est le suivant : ", summary(result), "\n")
+      result
     })
-    msg_stat(final_msg)
-    final_msg
+    
   })
   
-  output$fileUploaded <- reactive({
-    return(!is.null(read_file()))
+  ######### Risk-Ratio ##########
+  
+  observeEvent(input$riskratio, {
+    df <- read_file()
+    showModal(modalDialog(
+      helpText("Data should be a contingency table. ",
+               "If you have a confusion factor in tour data you can specify it. ",
+               "Ohterwise, just click submit"),
+      
+      tags$h4("Please choose your axis"),
+      selectInput("confusion_factor", "Add Confusion Factor (Optionnal)",
+                  choices = c(" ",colnames(df)), selected = " "),
+      footer = tagList(
+        actionButton('submit_riskratio', "Submit"),
+        modalButton('cancel'))
+    ))
+  })
+  
+  observeEvent(input$submit_riskratio, {
+    
+    df <- read_file()
+    df2 <- data.matrix(df)
+    if (!(input$confusion_factor == " ")) {
+      removeModal()
+      output$text_stats <- renderPrint({
+        splitd <- split(df, df[input$confusion_factor])
+        test <- lapply(splitd, function(sd)riskratio.wald(df2))
+        test
+      })
+      
+    }
+    else {
+      removeModal()
+      output$text_stats <- renderPrint ({
+        result <- riskratio.wald(x = df)
+        result
+    })}
+  })
+  
+  ############  OddRatio ###############
+  
+  observeEvent(input$oddratio, {
+    df <- read_file()
+    showModal(modalDialog(
+      helpText("Data should be a contingency table. ",
+               "If you have a confusion factor in tour data you can specify it. ",
+               "Ohterwise, just click submit")
+      tags$h2("Please choose your data"),
+      selectInput("confusion_factor", "Add Confusion Factor (Optionnal)",
+                  choices = c(" ",colnames(df)), selected = " "),
+      footer = tagList(
+        actionButton('submit_oddratio', "Submit"),
+        modalButton('cancel'))
+    ))
+  })
+  
+  observeEvent(input$submit_oddratio, {
+    removeModal()
+    df <- read_file()
+    df2 <- data.matrix(df)
+    if (!(input$confusion_factor == " ")) {
+      output$text_stats <- renderPrint({
+        splitd <- split(df, df[input$confusion_factor])
+        test <- lapply(splitd, function(sd)oddsratio(df2))
+        test
+      })
+      
+    }
+    else {
+      output$text_stats <- renderPrint ({
+        result <- oddsratio(x = df2)
+        result
+    })}
+  })
+  
+  ############# Incidence rate ratio ############
+  
+  observeEvent(input$incidence_ratio, {
+    df <- read_file()
+    showModal(modalDialog(
+      helpText("Input the number of inidivduals in each group"),
+      tags$h2("Please choose your data"),
+      numericInput(inputId = "x1",label = "Number of cases in the non-exposed group", value = 0),
+      numericInput(inputId = "x2", label = "Number of cases in the exposed group", value = 0),
+      numericInput("st1", "Number of person-time in the non-exposed group", value = 0),
+      numericInput("st2", "Number of person-time in the exposed group", value = 0),
+      
+      footer = tagList(
+        actionButton('submit_incidenceratio', "Submit"),
+        modalButton('cancel'))
+    ))
+  })
+  
+  observeEvent(input$submit_incidenceratio, {
+    removeModal()
+    x1 = input$x1
+    x2 = input$x2
+    st1 = input$st1
+    st2 = input$st2
+    output$text_stats <- renderPrint ({
+        result <- rateratio(c(x1,x2,st1,st2))
+        result
+      })
   })
   
   outputOptions(output, "fileUploaded", suspendWhenHidden = FALSE)
