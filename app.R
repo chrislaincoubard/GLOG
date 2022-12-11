@@ -1,11 +1,9 @@
 # webshot::install_phantomjs()
 library(colourpicker)
-library(data.table)
-library(ggplot2)
 library(maps)
-library(mapview)
 library(RColorBrewer)
 library(shiny)
+library(shinyjs)
 library(tmap)
 
 source("maps.R")
@@ -14,6 +12,7 @@ data("World")
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+    useShinyjs(),
 
     # Application title
     titlePanel("Mapping the data"),
@@ -21,32 +20,44 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-          fileInput("filebrowse", "Select file..."),
+          # File upload and parsing
+          fileInput("filebrowse", "Select file...", accept = c(".csv", ".tsv")),
           
           radioButtons("sep", "Separator", 
                        choices = c(Comma = ",", Semicolon = ";", Tab = "\t"),
                        selected = ","),
           
+          # Data specification
           selectInput("country_col", "Column containing the country names",
                       choices = c("Select file first")),
-          
+        
           radioButtons("type", "Country data is",
                        choices = c("Full name (English)"="names", "Alpha-2 code" = "a2", "Alpha-3 code" = "a3"),
-                       selected = "Full name (English)"),
-          
+                       selected = "names"),
+        
           selectInput("col_choice", "Data to visualise",
                       choices = c("Select file first")),
           
-          colourInput("color1", "First color for gradient", value = "#6A994E"),
-          colourInput("color2", "Last color for gradient", value = "#CB4749"),
-          checkboxInput("third_color", "Include a middle color value", value=TRUE),
-          colourInput("color3", "Middle color for gradient", value = "#FFFFFF")
+          
+          # Visual parameters (hidden by default, toggled with show_params button)
+          actionButton("show_params", "Show color settings"),
+          br(),
+          br(),
+          hidden(
+            colourpicker::colourInput("color1", "First color for gradient", value = "#6A994E"),
+            colourpicker::colourInput("color2", "Last color for gradient", value = "#CB4749"),
+            checkboxInput("third_color", "Include a middle color value", value=TRUE),
+            colourpicker::colourInput("color3", "Middle color for gradient", value = "#FFFFFF"),
+            actionButton("color_reset", "Reset colors")
+          )
         ),
 
-        # Show a plot of the generated distribution
         mainPanel(
+          # Map output
           tmapOutput("mapView"),
           downloadButton("downloadMap"),
+          
+          # Download map object
           dataTableOutput("contents")
         )
     )
@@ -54,8 +65,35 @@ ui <- fluidPage(
     
 )
 
-# Define server logic required to draw a histogram
+
+
+############ READ CSV FUNCTION ############
+
 server <- function(input, output, session) {
+
+  read_file <- reactive({
+    inFile <- input$filebrowse
+    if (is.null(inFile))
+      return(NULL)
+    df <- read.csv(inFile$datapath, header=T, sep = input$sep, fileEncoding="UTF-8-BOM")
+    return(df)
+  })
+
+
+### Toggle visibility of the color settings  
+  observeEvent(input$show_params,{
+    toggle(selector = "[id*='color']")
+  })
+  
+### Toggle the usability of 
+  observe({
+    for(n in names(input))
+      if (n!="filebrowse"){
+        toggleState(id=n, condition = !is.null(read_file()))
+      }
+  })
+  
+ 
   
   observe({
     updateSelectInput(session, "country_col", 
@@ -65,14 +103,24 @@ server <- function(input, output, session) {
   
   observe({
     updateSelectInput(session, "col_choice", 
-                             label = "Data to visualise:",
-                             choices = colnames(read_file()))
+                      label = "Data to visualise:",
+                      choices = colnames(read_file()))
   })
   
-  update_list <- reactive({
-    colnames(read_file())
+  observeEvent(input$color_reset, {
+    colourpicker::updateColourInput(session, "color1", value = "#6A994E")
   })
   
+  observeEvent(input$color_reset, {
+    colourpicker::updateColourInput(session, "color2", value = "#CB4749")
+  })
+  
+  observeEvent(input$color_reset, {
+    colourpicker::updateColourInput(session, "color3", value = "#FFFFFF")
+  })
+  
+  
+  # Create reactive variables
   selected <- reactive({
     input$col_choice
   })
@@ -101,13 +149,7 @@ server <- function(input, output, session) {
     input$third_color
   })
   
-  read_file <- reactive({
-    inFile <- input$filebrowse
-    if (is.null(inFile))
-      return(NULL)
-    df <- read.csv(inFile$datapath, header=T, sep = input$sep, fileEncoding="UTF-8-BOM")
-    return(df)
-  })
+
   
   current_map <- reactive({
     df <- read_file()
