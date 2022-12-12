@@ -196,6 +196,11 @@ server <- function(input, output,session) {
     
   })
   
+    observe({
+    updateSelectizeInput(session, "column_choice",
+                         choices = colnames(read_file()))
+  })
+  
   observeEvent(input$reset_plot, {
     output$plotTest <- renderPlot({})
   })
