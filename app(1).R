@@ -30,13 +30,13 @@ ui <- fluidPage(
           )),
         conditionalPanel(
           condition = 'input.master === "Stats"',
-          actionButton("mean_btn", "Calculate mean"),
-          actionButton("stdev_btn", "Calculate standard deviation"),
-          actionButton("sum_btn", "Calculate sum"),
-          actionButton("ratio_btn", "Calculate ratio"),
-          actionButton("prop_btn", "Calculate proportion"),
-          actionButton("prev_btn", "Calculate prevalence"),
-          actionButton("death_btn", "Calculate Death rate"),
+          actionButton("mean_btn", "Mean"),
+          actionButton("stdev_btn", "Variance"),
+          actionButton("sum_btn", "Sum"),
+          actionButton("ratio_btn", "Ratio"),
+          actionButton("prop_btn", "Proportion"),
+          actionButton("prev_btn", "Prevalence"),
+          actionButton("death_btn", "Death Rate"),
           actionButton("incidence", "Incidence Rate and Confidence Interval"),
           actionButton("riskratio", "Risk Ratio"),
           actionButton("oddratio", "Odd Ratio"),
@@ -228,7 +228,7 @@ server <- function(input, output,session) {
   observeEvent(input$stdev_btn, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2('Please choose the columns to compute their respective standard deviation :'),
+      tags$h2('Please choose the columns to compute their respective variance :'),
       selectInput("stdev_choice", "Stdev_choice", 
                   choices = colnames(df), selected = " ", multiple = TRUE),
       selectInput("filter", "Filter",
@@ -392,7 +392,7 @@ server <- function(input, output,session) {
     showModal(modalDialog(
       helpText("Choose in your data the columns of deaths count and total cases",
                "You can exclude one or multiple line before computing the result."),
-      tags$h2('Please choose the column corresponding to cases'),
+      tags$h2('Please choose the column corresponding to cases :'),
       selectInput("cases", "Cases ", 
                   choices = colnames(df), selected = " "),
       numericInput("totpop", "Total population", 
@@ -423,8 +423,8 @@ server <- function(input, output,session) {
       prev = sum(as.numeric(unlist(na.omit(df[RV$cas]))))/RV$tp
       binom = binom.test(sum(as.numeric(unlist(na.omit(df[RV$cas])))),RV$tp,p=0,alternative="less",conf.level=.95)
       pvalue = binom$p.value
-      final_msg = paste(final_msg, "La prevalence est de", prev, "\n",
-                        "Le binom test(alternative less, 95%) a pour pvalue",
+      final_msg = paste(final_msg, "The prevalence is of", prev, "\n",
+                        "p-value fo the binomial test (alternative less, alpha = 0.05)",
                         pvalue, "\n")
     })
     msg_stat(final_msg)
@@ -469,7 +469,7 @@ server <- function(input, output,session) {
     final_msg <- msg_stat()
     output$text_stats <- renderText ({
       d_rate = sum(as.numeric(unlist(na.omit(df[RV$death]))))/(sum(as.numeric(unlist(na.omit(df[RV$tc])))))
-      final_msg = paste(final_msg, "Le taux de mortalite est de", d_rate, "\n") 
+      final_msg = paste(final_msg, "Death rate : ", d_rate, "\n") 
     })
     msg_stat(final_msg)
     final_msg
