@@ -480,7 +480,7 @@ server <- function(input, output,session) {
     df <- read_file()
     showModal(modalDialog(
       helpText("Data should have 3 columns with the dates for each individual",
-               "Each line should be an individual")
+               "Each line should be an individual"),
       tags$h2("Please choose your axis"),
       selectInput(inputId = "DO",label = "Date of origin",
                   choices = colnames(df)),
@@ -572,7 +572,7 @@ server <- function(input, output,session) {
     showModal(modalDialog(
       helpText("Data should be a contingency table. ",
                "If you have a confusion factor in tour data you can specify it. ",
-               "Ohterwise, just click submit")
+               "Ohterwise, just click submit"),
       tags$h2("Please choose your data"),
       selectInput("confusion_factor", "Add Confusion Factor (Optionnal)",
                   choices = c(" ",colnames(df)), selected = " "),
