@@ -630,7 +630,12 @@ server <- function(input, output,session) {
         result
       })
   })
-  
+      
+    ######################################
+  output$fileUploaded <- reactive({
+    return(!is.null(read_file()))
+  })
+      
   outputOptions(output, "fileUploaded", suspendWhenHidden = FALSE)
   
   output$plot_stats <- renderPlot(
