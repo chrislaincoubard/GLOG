@@ -5,7 +5,7 @@ library(epitools)
 library(data.table)
 
 ui <- fluidPage(
-  titlePanel("GLOG -- STATS"),
+  titlePanel("Statistics calculator"),
   
   sidebarLayout(
     sidebarPanel(
@@ -44,9 +44,6 @@ ui <- fluidPage(
           condition = 'input.master === "Plots"',
           conditionalPanel(
             condition = "output.fileUploaded == true",
-            radioButtons("graph_type", "Choose the type of graph representation",
-                         choices = c("Scatter Plot" = 1, "Histogram"= 2, "Boxplot" = 3), 
-                         selected = "Scatter Plot"),
               ### Input for the user to choose which column to use ###
               varSelectizeInput("countryName", "Column containing the country name", data = "Select file first"),
               varSelectizeInput("colTime", "Column containing time reference", data = "Select file first"),
@@ -169,29 +166,7 @@ server <- function(input, output,session) {
                             data = read_file())
   })
   
-  observe({
-    updateSelectizeInput(session, "column_choice", 
-                         choices = colnames(read_file()),
-                         selected = ' ')
-  })
   
-  observe({
-    updateSelectizeInput(session, "label", 
-                         choices = colnames(read_file()),
-                         selected = ' ')
-  })
-  
-  observe({
-    updateSelectizeInput(session, "data", 
-                         choices = colnames(read_file()),
-                         selected = ' ')
-  })
-  
-  observe({
-    updateSelectizeInput(session, "separation", 
-                         choices = colnames(read_file()),
-                         selected = ' ')
-  })
   
   
   ############ READ CSV FUNCTION ##################
