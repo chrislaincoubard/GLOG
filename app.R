@@ -1,23 +1,29 @@
-# webshot::install_phantomjs()
+### Library imports
 library(colourpicker)
 library(maps)
+library(mapview)
 library(RColorBrewer)
 library(shiny)
 library(shinyjs)
 library(tmap)
+library(webshot)
+if (!webshot::is_phantomjs_installed()) webshot::install_phantomjs()
 
+### Map functions import
 source("maps.R")
 
+### Background world map
 data("World")
 
-# Define UI for application that draws a histogram
+
+########## USER INTERFACE ##########
 ui <- fluidPage(
     useShinyjs(),
 
-    # Application title
+    ### Application title
     titlePanel("Mapping the data"),
 
-    # Sidebar with a slider input for number of bins 
+    ### Sidebar
     sidebarLayout(
         sidebarPanel(
           # File upload and parsing
@@ -44,9 +50,9 @@ ui <- fluidPage(
           br(),
           br(),
           hidden(
-            colourpicker::colourInput("color1", "First color for gradient", value = "#6A994E"),
-            colourpicker::colourInput("color2", "Last color for gradient", value = "#CB4749"),
-            checkboxInput("third_color", "Include a middle color value", value=TRUE),
+            colourpicker::colourInput("color1", "First color for gradient", value = "#E3F2FD"),
+            colourpicker::colourInput("color2", "Last color for gradient", value = "#0D47A1"),
+            checkboxInput("third_color", "Include a middle color value", value=FALSE),
             colourpicker::colourInput("color3", "Middle color for gradient", value = "#FFFFFF"),
             actionButton("color_reset", "Reset colors")
           )
@@ -55,9 +61,11 @@ ui <- fluidPage(
         mainPanel(
           # Map output
           tmapOutput("mapView"),
-          downloadButton("downloadMap"),
           
           # Download map object
+          downloadButton("downloadMap"),
+          
+          # Dataframe contents
           dataTableOutput("contents")
         )
     )
@@ -67,10 +75,11 @@ ui <- fluidPage(
 
 
 
-############ READ CSV FUNCTION ############
+########## SERVER FUNCTIONS ##########
 
 server <- function(input, output, session) {
 
+  ### Read CSV file
   read_file <- reactive({
     inFile <- input$filebrowse
     if (is.null(inFile))
@@ -80,12 +89,12 @@ server <- function(input, output, session) {
   })
 
 
-### Toggle visibility of the color settings  
+  ### Toggle visibility of the color settings  
   observeEvent(input$show_params,{
     toggle(selector = "[id*='color']")
   })
   
-### Toggle the usability of 
+  ### Toggle the usability of all inputs after file us uploaded
   observe({
     for(n in names(input))
       if (n!="filebrowse"){
@@ -94,7 +103,7 @@ server <- function(input, output, session) {
   })
   
  
-  
+  ### Update lists with columns names
   observe({
     updateSelectInput(session, "country_col", 
                       label = "Column containing the country names:",
@@ -107,12 +116,13 @@ server <- function(input, output, session) {
                       choices = colnames(read_file()))
   })
   
+  ### Reset colors when button is pressed
   observeEvent(input$color_reset, {
-    colourpicker::updateColourInput(session, "color1", value = "#6A994E")
+    colourpicker::updateColourInput(session, "color1", value = "#E3F2FD")
   })
   
   observeEvent(input$color_reset, {
-    colourpicker::updateColourInput(session, "color2", value = "#CB4749")
+    colourpicker::updateColourInput(session, "color2", value = "#0D47A1")
   })
   
   observeEvent(input$color_reset, {
@@ -120,7 +130,7 @@ server <- function(input, output, session) {
   })
   
   
-  # Create reactive variables
+  ### Create reactive variables
   selected <- reactive({
     input$col_choice
   })
@@ -150,7 +160,7 @@ server <- function(input, output, session) {
   })
   
 
-  
+  ### Map render
   current_map <- reactive({
     df <- read_file()
     if (is.null(df)){
@@ -176,6 +186,8 @@ server <- function(input, output, session) {
     current_map()
   })
   
+  
+  ### Download map
   output$downloadMap <- downloadHandler(
     filename = "monkeypox_map.png",
     content = function(file) {
@@ -183,14 +195,17 @@ server <- function(input, output, session) {
     }
   )
   
+  ### Dataframe contents
   output$contents <- renderDataTable({
     df <- read_file()
     df
     })
 }
 
-# Run the application
 
+# Fixed local port
 options(shiny.host = "127.0.0.1")
 options(shiny.port = 1234)
+
+# Run the application
 shinyApp(ui = ui, server = server)

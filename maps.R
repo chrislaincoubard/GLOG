@@ -2,6 +2,7 @@
 plot_map <- function(df, country_col, ctype, data_type, color1, color2, color3){
   tmap_mode("view")
   
+  ### Handle country input type
   if (ctype == "names"){
     df$iso_a3 = iso.alpha(df[,country_col],3)
   }
@@ -25,17 +26,21 @@ plot_map <- function(df, country_col, ctype, data_type, color1, color2, color3){
   if (ctype == "a3"){
     colnames(df)[which(names(df) == country_col)] <- "iso_a3"
   }
-
+  
+  
+  ### Join input dataframe with global world data
   joined_df = merge(World, df, by="iso_a3")
   
-  
+  ### Set color palette
   if (is.null(color3)){
     pal <- colorRampPalette(c(color1, color2))
   }
   else{
     pal <- colorRampPalette(c(color1, color3, color2))
   }
-
+  
+  
+  ### Build map
   p = tm_shape(joined_df) +
     tm_polygons(col=data_type, palette=pal(3), style="cont", popup.vars=c(country_col, data_type)) +
     tm_view(set.view = c(10,30,1.5))
