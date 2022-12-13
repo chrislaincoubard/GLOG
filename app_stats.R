@@ -15,15 +15,15 @@ ui <- fluidPage(
                    selected = ","),
       
       fileInput("filechoser", label = "Choose a file", accept = ".csv"),
-      #pour afficher l'UI de façon conditionnelle
+      #pour afficher l'UI de fa�on conditionnelle
       conditionalPanel(
         condition = "output.fileUploaded == true",
         conditionalPanel(
           condition = "input.master == 'Display'",
-          selectInput("show_df", "show_data",
+          selectInput("show_df", "Show data",
                       choices = c("Don't show data" = 0,"Show Selected" = 1)),
           
-          selectizeInput("column_choice", "choose the column", choices = c(), selected = " ", multiple = TRUE)),
+          selectizeInput("column_choice", "Select columns", choices = c(), selected = " ", multiple = TRUE)),
         conditionalPanel(
           condition = 'input.master === "Stats"',
           actionButton("mean_btn", "Mean"),
@@ -45,16 +45,15 @@ ui <- fluidPage(
           conditionalPanel(
             condition = "output.fileUploaded == true",
               ### Input for the user to choose which column to use ###
-              varSelectizeInput("countryName", "Column containing the country name", data = "Select file first"),
+              varSelectizeInput("countryName", "Column containing the country names", data = "Select file first"),
               varSelectizeInput("colTime", "Column containing time reference", data = "Select file first"),
               radioButtons("dateFormat", "Date format", 
                            choices = c("YYYY/MM/DD"="%Y-%m-%d","DD/MM/YYYY"="%d-%m-%Y","MM/DD/YYYY"="%m-%d-%Y"),
                            selected = "%Y-%m-%d"),
               varSelectizeInput("colInterest", "Data to visualise", data = "Select file first"),
               
-              selectizeInput("currentChoice", "Choose which country to show",choices="World",multiple=TRUE),
-              actionButton("draw_plot", "Draw Plot"),
-              actionButton("reset_plot", "Reset")
+              selectizeInput("currentChoice", "Select at least one country",choices="World",multiple=TRUE)
+
               ### Input the countries of interest ###
           )
         )
@@ -74,6 +73,7 @@ ui <- fluidPage(
       conditionalPanel(
         condition = 'input.master === "Plots"',
         plotOutput("plotTest"),
+        downloadButton("downloadPlot")
       )
     )
   )
@@ -82,91 +82,72 @@ ui <- fluidPage(
 
 server <- function(input, output,session) {
   
-  ############## PLOT Reactive function ##############
-  observeEvent(input$draw_plot, {
-      output$plotTest <- renderPlot({
-        if (!is.null(read_file())){
-          df = read_file()
-          df$date = as.Date(df$date,input$dateFormat)
-          # Creation du sub dataframe utilisé par ggplot2
-          filter = df[,as.character(input$countryName)]==input$currentChoice
-          subdf = data.frame(
-            location = df[filter,as.character(input$countryName)],
-            Date = df[filter,as.character(input$colTime)],
-            subCase = df[filter,as.character(input$colInterest)]
-          )
-          # Creation du plot
-          ggplot(subdf, aes(x = Date, y = subCase,colour = location, group =location)) +
-            geom_line()+
-            ggtitle("Number of total cases by time")
-          
-        }})
-        output$plotTest <- renderPlot({
-          if (!is.null(read_file())){
-            df = read_file()
-            df$date = as.Date(df$date,input$dateFormat)
-            # Creation du sub dataframe utilisé par ggplot2
-            filter = df[,as.character(input$countryName)]==input$currentChoice
-            subdf = data.frame(
-              label = df[filter,as.character(input$countryName)],
-              data = df[filter,as.character(input$colTime)],
-              color = df[filter,as.character(input$colInterest)]
-              
-            )
-            # Creation du plot
-            ggplot(subdf, aes(x = data, colour = color, group =color)) +
-              geom_histogram(aes(position = "identity", bins = 30, alpha = 0.4))+
-              ggtitle("Number of total cases by time")
-            
-          }})
-        
-      output$plotTest <- renderPlot({
-        if (!is.null(read_file())){
-          df = read_file()
-          df$date = as.Date(df$date,input$dateFormat)
-          # Creation du sub dataframe utilisé par ggplot2
-          filter = df[,as.character(input$countryName)]==input$currentChoice
-          subdf = data.frame(
-            location = df[filter,as.character(input$countryName)],
-            Date = df[filter,as.character(input$colTime)],
-            subCase = df[filter,as.character(input$colInterest)]
-          )
-          # Creation du plot
-          ggplot(subdf, aes(x = Date, y = subCase,colour = location, group =location)) +
-            geom_line()+
-            ggtitle("Number of total cases by time")
-          
-        }})
-    
+  # Create reactive plot object
+  current_plot <- reactive ({
+    df = read_file()
+    if (is.null(df)){
+      p = NULL
+    }
+    else{
+      df[,time_col()] = as.Date(df[,time_col()],input$dateFormat)
+      # Creation du sub dataframe utilisé par ggplot2
+      filter = df[,country_col()]==which_country()
+      subdf = data.frame(
+        location = df[filter,country_col()],
+        Date = df[filter,time_col()],
+        subCase = df[filter,data_col()]
+      )
+      # Creation du plot
+      p = ggplot(subdf, aes(x = Date, y = subCase,colour = location, group =location)) +
+        geom_line() +
+        ylab(data_col())
+    }
   })
-  ### PLOT 1
   
-  output$plotTest <- renderPlot({})
-  
-  ########## Reactive function for the plots input ################# 
-  
-  observeEvent(input$countryName, {
-    updateSelectizeInput(session, "currentChoice",
-                         choices = unique(read_file()[,as.character(input$countryName)],selected="Austria"))
-    
+  # Show plot output
+  output$plotTest <- renderPlot({
+    print(current_plot())
   })
+
+  
+  # Download plot
+  output$downloadPlot <- downloadHandler(
+    filename = "monkeypox_plot.png",
+    content = function(file) {
+      device <- function(..., width, height) {
+        grDevices::png(..., width = width, height = height,
+                       res = 300, units = "in")
+      }
+      ggsave(file, plot = current_plot(), device = device)
+    }
+  )
+  
+  
+  ########## Reactive functions for the plots input ################# 
   
   observe({
     updateVarSelectizeInput(session, "countryName", 
                             data = read_file())
   })
+  country_col <- reactive({as.character(input$countryName)})
   
   observe({
     updateVarSelectizeInput(session, "colTime", 
                             data = read_file())
   })
+  time_col <- reactive({as.character(input$colTime)})
   
   observe({
     updateVarSelectizeInput(session, "colInterest", 
                             data = read_file())
   })
+  data_col <- reactive({as.character(input$colInterest)})
   
-  
+  observeEvent(country_col(),{
+    updateSelectizeInput(session, "currentChoice",
+                         choices = unique(read_file()[,country_col()]))
+  })
+  which_country <- reactive({input$currentChoice})
   
   
   ############ READ CSV FUNCTION ##################
@@ -201,9 +182,6 @@ server <- function(input, output,session) {
                          choices = colnames(read_file()))
   })
   
-  observeEvent(input$reset_plot, {
-    output$plotTest <- renderPlot({})
-  })
   
   ########### DATATABLE DISPLAY ########
   output$contents <- renderDataTable({
@@ -221,7 +199,7 @@ server <- function(input, output,session) {
   observeEvent(input$mean_btn, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2('Please choose the columns to compute their respective mean :'),
+      tags$h2('Select columns to compute their respective mean:'),
       selectInput("mean_choice", "Mean_choice", 
                   choices = colnames(df), selected = " ", multiple = TRUE),
       selectInput("filter", "Filter",
@@ -261,7 +239,7 @@ server <- function(input, output,session) {
   observeEvent(input$stdev_btn, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2('Please choose the columns to compute their respective variance :'),
+      tags$h2('Select columns to compute their respective variance:'),
       selectInput("stdev_choice", "Stdev_choice", 
                   choices = colnames(df), selected = " ", multiple = TRUE),
       selectInput("filter", "Filter",
@@ -301,7 +279,7 @@ server <- function(input, output,session) {
   observeEvent(input$sum_btn, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2('Please choose the columns to compute their respective sum :'),
+      tags$h2('Select columns to compute their respective sum:'),
       selectInput("sum_choice", "Sum_choice", 
                   choices = colnames(df),selected = " ", multiple = TRUE),
       selectInput("filter", "Filter",
@@ -340,7 +318,7 @@ server <- function(input, output,session) {
   observeEvent(input$ratio_btn, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2('Please choose the columns to compute their ratio :'),
+      tags$h2('Select columns to compute their ratio:'),
       selectInput("ratio_num", "Numerator", 
                   choices = colnames(df), selected = " "),
       selectInput("ratio_den", "Denominator", 
@@ -371,7 +349,7 @@ server <- function(input, output,session) {
     final_msg = msg_stat()
     output$text_stats <- renderText ({
       ratio = sum(as.numeric(unlist(na.omit(df[RV$num]))))/sum(as.numeric(unlist(na.omit(df[RV$den]))))
-      final_msg = paste(final_msg, "Le ratio est de", ratio, "\n")
+      final_msg = paste(final_msg, "The ratio is ", ratio, "\n")
     })
     msg_stat(final_msg)
     final_msg
@@ -383,7 +361,7 @@ server <- function(input, output,session) {
   observeEvent(input$prop_btn, {
     df <- read_file()
     showModal(modalDialog(
-      tags$h2('Please choose the columns to compute their proportion :'),
+      tags$h2('Select columns to compute their proportion:'),
       selectInput("prop_num", "Numerator", 
                   choices = colnames(df), selected = " "),
       selectInput("prop_den", "Denominator", 
@@ -412,7 +390,7 @@ server <- function(input, output,session) {
     final_msg = msg_stat()
     output$text_stats <- renderText ({
       prop = sum(as.numeric(unlist(na.omit(df[RV$nump]))))/(sum(as.numeric(unlist(na.omit(df[RV$denp])))) + sum(as.numeric(unlist(na.omit(df[RV$nump])))))
-      final_msg = paste(final_msg, "La proportion est de", prop, "\n")
+      final_msg = paste(final_msg, "The proportion is ", prop, "\n")
     })
     msg_stat(final_msg)
     final_msg
@@ -425,7 +403,7 @@ server <- function(input, output,session) {
     showModal(modalDialog(
       helpText("Choose in your data the columns of deaths count and total cases",
                "You can exclude one or multiple line before computing the result."),
-      tags$h2('Please choose the column corresponding to cases :'),
+      tags$h2('Select the column corresponding to cases :'),
       selectInput("cases", "Cases ", 
                   choices = colnames(df), selected = " "),
       numericInput("totpop", "Total population", 
@@ -502,7 +480,7 @@ server <- function(input, output,session) {
     final_msg <- msg_stat()
     output$text_stats <- renderText ({
       d_rate = sum(as.numeric(unlist(na.omit(df[RV$death]))))/(sum(as.numeric(unlist(na.omit(df[RV$tc])))))
-      final_msg = paste(final_msg, "Death rate : ", d_rate, "\n") 
+      final_msg = paste(final_msg, "Death rate: ", d_rate, "\n") 
     })
     msg_stat(final_msg)
     final_msg
@@ -565,8 +543,8 @@ server <- function(input, output,session) {
     df <- read_file()
     showModal(modalDialog(
       helpText("Data should be a contingency table. ",
-               "If you have a confusion factor in tour data you can specify it. ",
-               "Ohterwise, just click submit"),
+               "If you have a confusion factor in your data you can specify it. ",
+               "Otherwise, just click submit"),
       
       tags$h4("Please choose your axis"),
       selectInput("confusion_factor", "Add Confusion Factor (Optionnal)",
@@ -604,8 +582,8 @@ server <- function(input, output,session) {
     df <- read_file()
     showModal(modalDialog(
       helpText("Data should be a contingency table. ",
-               "If you have a confusion factor in tour data you can specify it. ",
-               "Ohterwise, just click submit"),
+               "If you have a confusion factor in your data you can specify it. ",
+               "Otherwise, just click submit"),
       tags$h2("Please choose your data"),
       selectInput("confusion_factor", "Add Confusion Factor (Optionnal)",
                   choices = c(" ",colnames(df)), selected = " "),
@@ -639,7 +617,7 @@ server <- function(input, output,session) {
   observeEvent(input$incidence_ratio, {
     df <- read_file()
     showModal(modalDialog(
-      helpText("Input the number of inidivduals in each group"),
+      helpText("Input the number of individuals in each group"),
       tags$h2("Please choose your data"),
       numericInput(inputId = "x1",label = "Number of cases in the non-exposed group", value = 0),
       numericInput(inputId = "x2", label = "Number of cases in the exposed group", value = 0),
