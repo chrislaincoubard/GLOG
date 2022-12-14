@@ -2,7 +2,7 @@
 
 Ce code est la propriété de BRINDEL Léonard, COUBARD Chrislain, GERBER Zoé, MANGANE Fatoumata et NICOLLIN Elena.
 
-Il a été produit pour le Projet de Génie Logiciel 2023, dans el cadre du Master 2 de Bio-informatique de Bordeaux. Nous avons travaillé sous l'encadrement de notre enseignante Marie BEURTON-AIMAR.
+Il a été produit pour le Projet de Génie Logiciel 2022, dans el cadre du Master 2 de Bio-informatique de Bordeaux. Nous avons travaillé sous l'encadrement de notre enseignante Marie BEURTON-AIMAR.
 
 
 ## Préambule
