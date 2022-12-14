@@ -1,0 +1,8 @@
+location;iso_code;date;total_cases;total_deaths;new_cases;new_deaths;new_cases_smoothed;new_deaths_smoothed;new_cases_per_million;total_cases_per_million;new_cases_smoothed_per_million;new_deaths_per_million;total_deaths_per_million;new_deaths_smoothed_per_million
+Andorra;AND;07-25-2022;2;0;2;0;0.29;0;25.306;25.306;3.669;0;0;0
+Andorra;AND;07-26-2022;3;0;1;0;0.43;0;12.653;37.958;5.441;0;0;0
+Andorra;AND;07-27-2022;3;0;0;0;0.43;0;0;37.958;5.441;0;0;0
+Andorra;AND;07-28-2022;3;0;0;0;0.43;0;0;37.958;5.441;0;0;0
+Andorra;AND;07-29-2022;3;0;0;0;0.43;0;0;37.958;5.441;0;0;0
+Andorra;AND;07-30-2022;3;0;0;0;0.43;0;0;37.958;5.441;0;0;0
+Andorra;AND;07-31-2022;3;0;0;0;0.43;0;0;37.958;5.441;0;0;0
